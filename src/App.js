@@ -28,6 +28,12 @@ import {
   handleEnemyMovement
 } from './game/enemyUtils';
 
+// 기존 imports에 추가
+import { VictoryScene } from './game/victoryUtils';
+import { createGoal } from './game/goalUtils';
+
+import { setupHealthSystem } from './game/healthUtils';
+
 // App component 정의
 const App = () => {
   const gameRef = useRef(null);
@@ -48,6 +54,27 @@ const App = () => {
       return newHealth;
     });
   }, [isGameOver]);
+
+  useEffect(() => {
+    if (showGame && game.current) {
+      const scene = game.current.scene.getScene('GameScene');
+      if (scene) {
+        scene.events.on('changeHealth', handleHealthChange);
+      }
+    }
+
+    return () => {
+      if (game.current) {
+        const scene = game.current.scene.getScene('GameScene');
+        if (scene) {
+          scene.events.removeListener('changeHealth', handleHealthChange);
+        }
+      }
+    };
+  }, [showGame, handleHealthChange]);
+
+
+  const [isVictory, setIsVictory] = useState(false);
 
   const createGame = useCallback(() => {
     class GameScene extends Phaser.Scene {
@@ -78,16 +105,21 @@ const App = () => {
         // 사운드 로드
         this.load.audio('mainBGM', './sources/main.mp3');
         this.load.audio('enemySound', './sources/enemy.mp3');
+        this.load.audio('fishSound', './sources/fish.mp3');
+
+        // goal 로드
+        this.load.image('goal', './sources/ith.png');
+        this.load.image('goalBackground', './sources/goalbackground.png');
       }
     
       create() {
         // 배경음악 재생
         this.mainBGM = this.sound.add('mainBGM', { loop: true });
         this.mainBGM.play();
-    
+      
         createPlayerAnimations(this);
         createEnemyAnimations(this);
-    
+      
         const player = createPlayer(this);
         const { walls, fishes, worldWidth, worldHeight } = createMaze(this, player);
         const cursors = this.input.keyboard.createCursorKeys();
@@ -101,75 +133,86 @@ const App = () => {
       
         this.player = player;
         this.cursors = cursors;
-        this.walls = walls;  // walls 참조 저장
+        this.walls = walls;
         this.gameOverStarted = false;
-
-      // Enemy 스폰 타이머 설정
-      const spawnDelay = Phaser.Math.Between(30000, 45000);
-      this.time.delayedCall(spawnDelay, () => {
-        if (!this.gameOverStarted) {
-          this.enemy = createEnemy(this, this.player, this.worldWidth, this.worldHeight);
-          this.enemySpawned = true;
-          
-          // enemy와 벽 충돌 설정
-          this.physics.add.collider(this.enemy, this.walls);
-          
-          // enemy와 player 충돌 설정
-          this.physics.add.overlap(this.player, this.enemy, () => {
-            if (!this.gameOverStarted) {
-              this.gameOverAnimation();
-            }
-          });
-        }
-      });
-
-    // 주기적으로 체력 감소
-    this.time.addEvent({
-      delay: 1000,
-      callback: () => {
-        document.dispatchEvent(new CustomEvent('changeHealth', { detail: -1 }));
-      },
-      loop: true
-    });
-  }
-
-  update() {
-    if (this.player && this.cursors && !this.gameOverStarted) {
-      handlePlayerMovement(this.player, this.cursors);
-      updatePlayerDepth(this.player, 21);
       
-      if (this.enemySpawned && this.enemy) {
-        handleEnemyMovement(this.enemy, this.player, this);
+        // 체력 시스템 설정 추가
+        setupHealthSystem(this, player, fishes);
+      
+        // goal 생성
+        this.goal = createGoal(this, player, worldWidth, worldHeight);
+
+        // Enemy 스폰 타이머 설정
+        const spawnDelay = Phaser.Math.Between(30000, 45000);
+        this.time.delayedCall(spawnDelay, () => {
+          if (!this.gameOverStarted) {
+            this.enemy = createEnemy(this, this.player, worldWidth, worldHeight);
+            this.enemySpawned = true;
+            
+            this.physics.add.overlap(this.player, this.enemy, () => {
+              if (!this.gameOverStarted) {
+                this.gameOverAnimation();
+              }
+            });
+          }
+        });
+
+        // 골 도달 이벤트 처리
+        this.events.on('goalReached', () => {
+          if (this.mainBGM) {
+            this.mainBGM.stop();
+          }
+          if (this.enemy && this.enemy.enemySound) {
+            this.enemy.enemySound.stop();
+          }
+      
+          const victoryScene = this.scene.add('VictoryScene', VictoryScene, true);
+          this.scene.pause();
+      
+          // VictoryScene의 이벤트를 바로 받아서 처리
+          victoryScene.events.once('victoryComplete', () => {
+            this.time.delayedCall(500, () => {
+              document.dispatchEvent(new CustomEvent('gameVictory'));
+            });
+          });
+        });
       }
-    }
-  }
+
+      update() {
+        if (this.player && this.cursors && !this.gameOverStarted) {
+          handlePlayerMovement(this.player, this.cursors);
+          updatePlayerDepth(this.player, 21);
+          
+          if (this.enemySpawned && this.enemy) {
+            handleEnemyMovement(this.enemy, this.player, this);
+          }
+        }
+      }
     
       gameOverAnimation() {
         this.gameOverStarted = true;
 
-          // 모든 사운드 페이드 아웃
-  if (this.mainBGM) {
-    this.tweens.add({
-      targets: this.mainBGM,
-      volume: 0,
-      duration: 500,
-      onComplete: () => {
-        this.mainBGM.stop();
-      }
-    });
-  }
+        if (this.mainBGM) {
+          this.tweens.add({
+            targets: this.mainBGM,
+            volume: 0,
+            duration: 500,
+            onComplete: () => {
+              this.mainBGM.stop();
+            }
+          });
+        }
 
-  // enemy 사운드가 있다면 페이드 아웃
-  if (this.enemy && this.enemy.enemySound) {
-    this.tweens.add({
-      targets: this.enemy.enemySound,
-      volume: 0,
-      duration: 500,
-      onComplete: () => {
-        this.enemy.enemySound.stop();
-      }
-    });
-  }
+        if (this.enemy && this.enemy.enemySound) {
+          this.tweens.add({
+            targets: this.enemy.enemySound,
+            volume: 0,
+            duration: 500,
+            onComplete: () => {
+              this.enemy.enemySound.stop();
+            }
+          });
+        }
   
         this.tweens.add({
           targets: this.player,
@@ -223,18 +266,19 @@ const App = () => {
     if (showGame) {
       createGame();
     }
-  
-    const handleHealthChangeEvent = (e) => {
-      handleHealthChange(e.detail);
+
+    const handleVictory = () => {
+      setIsVictory(true);
+      setShowGame(false);  // 게임 화면 숨기기
     };
-  
-    document.addEventListener('changeHealth', handleHealthChangeEvent);
-  
+
+    document.addEventListener('gameVictory', handleVictory);
+
     return () => {
       if (game.current) game.current.destroy(true);
-      document.removeEventListener('changeHealth', handleHealthChangeEvent);
+      document.removeEventListener('gameVictory', handleVictory);
     };
-  }, [showGame, createGame, handleHealthChange]);
+  }, [showGame, createGame]);
 
   const startGame = () => {
     setShowGame(true);
