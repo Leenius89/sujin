@@ -1,22 +1,31 @@
 export const setupHealthSystem = (scene, player, fishes) => {
   // 체력 자동 감소 타이머 설정
   scene.time.addEvent({
-    delay: 1000,  // 1초마다
+    delay: 1000,
     callback: () => {
       if (!scene.gameOverStarted) {
-        scene.events.emit('changeHealth', -1);  // 체력 1 감소
+        scene.events.emit('changeHealth', -1);
       }
     },
     loop: true
   });
-  
- // fish 충돌 시 체력 회복
- scene.physics.add.overlap(player, fishes, (player, fish) => {
-  // 물고기 먹는 소리 재생
-  const fishSound = scene.sound.add('fishSound', { volume: 0.5 });
-  fishSound.play();
-  
-  fish.destroy();
-  scene.events.emit('changeHealth', 20);  // 체력 20 회복
-});
+
+  // fish 충돌 처리 설정
+  scene.physics.add.overlap(player, fishes, (player, fish) => {
+    if (scene.gameOverStarted) return;
+
+    // 체력 회복을 위한 이벤트 발생
+    scene.events.emit('changeHealth', 20);
+    
+    // 사운드 직접 재생
+    if (scene.soundManager) {
+      scene.soundManager.playFishSound();
+      console.log("Attempting to play fish sound"); // 디버깅용
+    } else {
+      console.warn("Sound manager not found"); // 디버깅용
+    }
+    
+    // fish 제거
+    fish.destroy();
+  });
 };

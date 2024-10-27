@@ -36,39 +36,19 @@ const setupEnemyPhysics = (enemy, scale) => {
 };
 
 const executeCutscene = (scene, enemy, player) => {
-  // 적에게 카메라 이동
   scene.cameras.main.pan(enemy.x, enemy.y, 1000, 'Power2', true, (camera, progress) => {
     if (progress === 1) {
-      // 2초 대기
       scene.time.delayedCall(2000, () => {
-        // 플레이어에게 카메라 이동
         scene.cameras.main.pan(player.x, player.y, 1000, 'Power2', true, (camera, progress) => {
           if (progress === 1) {
             enemy.active = true;
             scene.cameras.main.startFollow(player);
             
-            // BGM 페이드 아웃
-            if (scene.mainBGM) {
-              scene.tweens.add({
-                targets: scene.mainBGM,
-                volume: 0,
-                duration: 1000,
-                onComplete: () => {
-                  if (scene.mainBGM) {
-                    scene.mainBGM.stop();
-                  }
-                }
-              });
-            }
+            // 메인 BGM 페이드 아웃
+            scene.soundManager.stopMainBGM();
             
-            // 적 사운드 페이드 인
-            if (enemy.enemySound) {
-              scene.tweens.add({
-                targets: enemy.enemySound,
-                volume: 1,
-                duration: 1000
-              });
-            }
+            // 적 사운드 시작
+            enemy.enemySound = scene.soundManager.playEnemySound();
           }
         });
       });
@@ -100,14 +80,6 @@ export const createEnemy = (scene, player, worldWidth, worldHeight) => {
 
   // 벽 충돌 설정
   scene.physics.add.collider(newEnemy, scene.walls);
-
-  // 사운드 설정
-  try {
-    newEnemy.enemySound = scene.sound.add('enemySound', { loop: true, volume: 0 });
-    newEnemy.enemySound.play();
-  } catch (error) {
-    console.warn('Enemy sound creation failed:', error);
-  }
 
   // 초기 경로 설정
   newEnemy.pathFinder = {

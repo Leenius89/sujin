@@ -1,4 +1,3 @@
-// React와 Hook imports를 분리해서 명시적으로 import
 import * as React from 'react';
 import { 
   useState, 
@@ -6,16 +5,10 @@ import {
   useRef, 
   useCallback 
 } from 'react';
-
-// Phaser import
 import Phaser from 'phaser';
-
-// Components imports
 import Header from './components/Header';
 import MainPage from './components/MainPage';
 import GameOver from './components/GameOver';
-
-// Utility functions imports
 import { createMaze, updatePlayerDepth } from './game/mazeUtils';
 import { 
   createPlayer, 
@@ -27,21 +20,19 @@ import {
   createEnemyAnimations,
   handleEnemyMovement
 } from './game/enemyUtils';
-
-// 기존 imports에 추가
 import { VictoryScene } from './game/victoryUtils';
 import { createGoal } from './game/goalUtils';
+import { setupHealthSystem, setupFishCollisionListener } from './game/healthUtils';  // setupFishCollisionListener 추가
+import { SoundManager } from './game/soundUtils';
 
-import { setupHealthSystem } from './game/healthUtils';
-
-// App component 정의
-const App = () => {
+function App() {
   const gameRef = useRef(null);
   const game = useRef(null);
   const [gameSize, setGameSize] = useState({ width: 768, height: 1024 });
   const [health, setHealth] = useState(100);
   const [showGame, setShowGame] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
+  const [isVictory, setIsVictory] = useState(false);
 
   const handleHealthChange = useCallback((amount) => {
     setHealth(prevHealth => {
@@ -55,27 +46,6 @@ const App = () => {
     });
   }, [isGameOver]);
 
-  useEffect(() => {
-    if (showGame && game.current) {
-      const scene = game.current.scene.getScene('GameScene');
-      if (scene) {
-        scene.events.on('changeHealth', handleHealthChange);
-      }
-    }
-
-    return () => {
-      if (game.current) {
-        const scene = game.current.scene.getScene('GameScene');
-        if (scene) {
-          scene.events.removeListener('changeHealth', handleHealthChange);
-        }
-      }
-    };
-  }, [showGame, handleHealthChange]);
-
-
-  const [isVictory, setIsVictory] = useState(false);
-
   const createGame = useCallback(() => {
     class GameScene extends Phaser.Scene {
       constructor() {
@@ -83,13 +53,13 @@ const App = () => {
         this.health = 100;
         this.enemy = null;
         this.enemySpawned = false;
-        this.mainBGM = null;
         this.worldWidth = 0;
         this.worldHeight = 0;
+        this.gameOverStarted = false;
+        this.soundManager = null;
       }
 
       preload() {
-        // 기존 이미지 로드
         this.load.image('cat1', './sources/cat1.png');
         this.load.image('cat2', './sources/cat2.png');
         this.load.image('building1', './sources/building1.png');
@@ -97,34 +67,25 @@ const App = () => {
         this.load.image('building3', './sources/building3.png');
         this.load.image('fish1', './sources/fish1.png');
         this.load.image('fish2', './sources/fish2.png');
-        
-        // enemy 이미지 로드
         this.load.image('enemy1', './sources/enemy1.png');
         this.load.image('enemy2', './sources/enemy2.png');
-        
-        // 사운드 로드
-        this.load.audio('mainBGM', './sources/main.mp3');
-        this.load.audio('enemySound', './sources/enemy.mp3');
-        this.load.audio('fishSound', './sources/fish.mp3');
-
-        // goal 로드
         this.load.image('goal', './sources/ith.png');
         this.load.image('goalBackground', './sources/goalbackground.png');
+
+        this.soundManager = new SoundManager(this);
+        this.soundManager.preloadSounds();
       }
     
       create() {
-        // 배경음악 재생
-        this.mainBGM = this.sound.add('mainBGM', { loop: true });
-        this.mainBGM.play();
+        this.soundManager.playMainBGM();
       
         createPlayerAnimations(this);
         createEnemyAnimations(this);
       
         const player = createPlayer(this);
         const { walls, fishes, worldWidth, worldHeight } = createMaze(this, player);
-        const cursors = this.input.keyboard.createCursorKeys();
       
-        // 월드 크기 저장
+        const cursors = this.input.keyboard.createCursorKeys();
         this.worldWidth = worldWidth;
         this.worldHeight = worldHeight;
         
@@ -134,19 +95,19 @@ const App = () => {
         this.player = player;
         this.cursors = cursors;
         this.walls = walls;
-        this.gameOverStarted = false;
       
-        // 체력 시스템 설정 추가
+        // 체력 변경 이벤트 리스너 설정
+        this.events.on('changeHealth', handleHealthChange);
+        
+        // 체력 시스템 설정
         setupHealthSystem(this, player, fishes);
       
-        // goal 생성
-        this.goal = createGoal(this, player, worldWidth, worldHeight);
-
         // Enemy 스폰 타이머 설정
         const spawnDelay = Phaser.Math.Between(30000, 45000);
         this.time.delayedCall(spawnDelay, () => {
           if (!this.gameOverStarted) {
             this.enemy = createEnemy(this, this.player, worldWidth, worldHeight);
+            this.enemy.enemySound = this.soundManager.playEnemySound();
             this.enemySpawned = true;
             
             this.physics.add.overlap(this.player, this.enemy, () => {
@@ -156,20 +117,17 @@ const App = () => {
             });
           }
         });
-
+      
         // 골 도달 이벤트 처리
         this.events.on('goalReached', () => {
-          if (this.mainBGM) {
-            this.mainBGM.stop();
-          }
+          this.soundManager.stopMainBGM();
           if (this.enemy && this.enemy.enemySound) {
-            this.enemy.enemySound.stop();
+            this.soundManager.stopEnemySound(this.enemy.enemySound);
           }
       
           const victoryScene = this.scene.add('VictoryScene', VictoryScene, true);
           this.scene.pause();
       
-          // VictoryScene의 이벤트를 바로 받아서 처리
           victoryScene.events.once('victoryComplete', () => {
             this.time.delayedCall(500, () => {
               document.dispatchEvent(new CustomEvent('gameVictory'));
@@ -177,7 +135,6 @@ const App = () => {
           });
         });
       }
-
       update() {
         if (this.player && this.cursors && !this.gameOverStarted) {
           handlePlayerMovement(this.player, this.cursors);
@@ -191,29 +148,13 @@ const App = () => {
     
       gameOverAnimation() {
         this.gameOverStarted = true;
-
-        if (this.mainBGM) {
-          this.tweens.add({
-            targets: this.mainBGM,
-            volume: 0,
-            duration: 500,
-            onComplete: () => {
-              this.mainBGM.stop();
-            }
-          });
-        }
-
+        this.soundManager.playDyingSound();
+        this.soundManager.stopMainBGM();
+        
         if (this.enemy && this.enemy.enemySound) {
-          this.tweens.add({
-            targets: this.enemy.enemySound,
-            volume: 0,
-            duration: 500,
-            onComplete: () => {
-              this.enemy.enemySound.stop();
-            }
-          });
+          this.soundManager.stopEnemySound(this.enemy.enemySound);
         }
-  
+
         this.tweens.add({
           targets: this.player,
           y: this.player.y - 50,
@@ -237,6 +178,8 @@ const App = () => {
               onComplete: () => {
                 setTimeout(() => {
                   setIsGameOver(true);
+                  // 게임 씬 정지
+                  this.scene.pause();
                 }, 500);
               }
             });
@@ -260,16 +203,16 @@ const App = () => {
 
     if (game.current) game.current.destroy(true);
     game.current = new Phaser.Game(config);
-  }, [gameSize]);
+  }, [gameSize, handleHealthChange]);
 
   useEffect(() => {
-    if (showGame) {
+    if (showGame && !isGameOver) {  // isGameOver 조건 추가
       createGame();
     }
 
     const handleVictory = () => {
       setIsVictory(true);
-      setShowGame(false);  // 게임 화면 숨기기
+      setShowGame(false);
     };
 
     document.addEventListener('gameVictory', handleVictory);
@@ -278,7 +221,7 @@ const App = () => {
       if (game.current) game.current.destroy(true);
       document.removeEventListener('gameVictory', handleVictory);
     };
-  }, [showGame, createGame]);
+  }, [showGame, createGame, isGameOver]);  // isGameOver 의존성 추가
 
   const startGame = () => {
     setShowGame(true);
@@ -287,12 +230,19 @@ const App = () => {
   };
 
   const restartGame = () => {
+    setIsGameOver(false);  // 먼저 isGameOver를 false로 설정
     setHealth(100);
-    setIsGameOver(false);
-    setShowGame(true);
-    createGame();
-  };
 
+        // 약간의 지연 후 게임 재시작
+        setTimeout(() => {
+          if (game.current) {
+            game.current.destroy(true);
+          }
+          setShowGame(true);
+          createGame();
+        }, 100);
+      };
+      
   return (
     <div style={{ 
       display: 'flex', 
@@ -322,6 +272,6 @@ const App = () => {
       {isGameOver && <GameOver onRetry={restartGame} />}
     </div>
   );
-};
+}
 
 export default App;

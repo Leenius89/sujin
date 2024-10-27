@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 export const createMaze = (scene, player) => {
   const tileSize = 64;
-  const wallScale = 0.1;  // 벽 크기를 0.1로 고정
+  const wallScale = 0.1;
   const mazeSize = 21;
   const spacing = 1.5;
 
@@ -35,8 +35,20 @@ export const createMaze = (scene, player) => {
   const worldWidth = mazeSize * tileSize * spacing;
   const worldHeight = mazeSize * tileSize * spacing;
 
-  // 월드 경계 설정
   scene.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+
+  // Create fish animation
+  if (!scene.anims.exists('fishSwim')) {
+    scene.anims.create({
+      key: 'fishSwim',
+      frames: [
+        { key: 'fish1' },
+        { key: 'fish2' }
+      ],
+      frameRate: 4,
+      repeat: -1
+    });
+  }
 
   for (let y = 0; y < mazeSize; y++) {
     for (let x = 0; x < mazeSize; x++) {
@@ -56,11 +68,11 @@ export const createMaze = (scene, player) => {
         fish.setScale(0.05);
         fish.setDepth(y);
         fish.play('fishSwim');
-        
+
         scene.tweens.add({
           targets: fish,
           y: fish.y - 15,
-          duration: 400,
+          duration: 1000,
           ease: 'Sine.easeInOut',
           yoyo: true,
           repeat: -1
@@ -71,9 +83,18 @@ export const createMaze = (scene, player) => {
 
   scene.physics.add.collider(player, walls);
   
+  // fish 충돌 처리를 여기서 직접 설정
   scene.physics.add.overlap(player, fishes, (player, fish) => {
-    fish.destroy();
-    document.dispatchEvent(new CustomEvent('changeHealth', { detail: 20 }));
+    if (!scene.gameOverStarted) {
+      // 사운드 재생 (직접 호출)
+      scene.soundManager.playFishSound();
+      
+      // 체력 회복
+      scene.events.emit('changeHealth', 20);
+      
+      // fish 제거
+      fish.destroy();
+    }
   });
 
   return { walls, fishes, worldWidth, worldHeight };
