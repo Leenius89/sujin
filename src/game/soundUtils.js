@@ -1,3 +1,5 @@
+import Phaser from 'phaser';
+
 export class SoundManager {
     constructor(scene) {
       this.scene = scene;
@@ -13,6 +15,9 @@ export class SoundManager {
           this.scene.load.audio('enemySound', 'sources/enemy.mp3');
           this.scene.load.audio('fishSound', 'sources/fish.mp3');
           this.scene.load.audio('dyingSound', 'sources/dying.mp3');
+          this.scene.load.audio('construct1', 'sources/construct1.mp3');
+          this.scene.load.audio('construct2', 'sources/construct2.mp3');
+          this.scene.load.audio('construct3', 'sources/construct3.mp3');
     
           // 로드 완료 이벤트 설정
           this.scene.load.on('complete', this.initializeSounds.bind(this));
@@ -128,4 +133,27 @@ export class SoundManager {
         });
       }
     }
+    playConstructSound() {
+        if (!this.soundsLoaded) {
+          console.warn('Sounds not loaded yet');
+          return;
+        }
+      
+        try {
+          // 랜덤하게 1~3개의 사운드 선택
+          const numSounds = Phaser.Math.Between(1, 3);
+          const availableSounds = [1, 2, 3];
+          const selectedSounds = Phaser.Utils.Array.Shuffle(availableSounds).slice(0, numSounds);
+      
+          selectedSounds.forEach(num => {
+            const constructSound = this.scene.sound.add(`construct${num}`, {
+              volume: 0.5,
+              loop: false
+            });
+            constructSound.play();
+          });
+        } catch (error) {
+          console.error('Error playing construct sound:', error);
+        }
+      }
   }

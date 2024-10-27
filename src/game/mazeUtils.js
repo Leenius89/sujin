@@ -6,9 +6,21 @@ export const createMaze = (scene, player) => {
   const mazeSize = 21;
   const spacing = 1.5;
 
+  // 미로 배열 초기화 - 모든 칸을 벽(1)으로 채움
   let maze = Array(mazeSize).fill().map(() => Array(mazeSize).fill(1));
 
-  // 시작 위치와 주변을 비웁니다
+  // 중앙 위치 계산
+  const centerX = Math.floor(mazeSize / 2);
+  const centerY = Math.floor(mazeSize / 2);
+
+  // 중앙 위치와 주변을 비움 (0으로 설정)
+  maze[centerY][centerX] = 0;
+  maze[centerY-1][centerX] = 0;
+  maze[centerY+1][centerX] = 0;
+  maze[centerY][centerX-1] = 0;
+  maze[centerY][centerX+1] = 0;
+
+  // 시작 위치와 주변을 비움
   maze[1][1] = 0;
   maze[1][2] = 0;
   maze[2][1] = 0;
@@ -97,7 +109,7 @@ export const createMaze = (scene, player) => {
     }
   });
 
-  return { walls, fishes, worldWidth, worldHeight };
+  return { walls, fishes, worldWidth, worldHeight, centerX, centerY };
 };
 
 export const updatePlayerDepth = (player, mazeSize) => {

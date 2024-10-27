@@ -22,8 +22,9 @@ import {
 } from './game/enemyUtils';
 import { VictoryScene } from './game/victoryUtils';
 import { createGoal } from './game/goalUtils';
-import { setupHealthSystem, setupFishCollisionListener } from './game/healthUtils';  // setupFishCollisionListener 추가
+import { setupHealthSystem } from './game/healthUtils';
 import { SoundManager } from './game/soundUtils';
+import { ApartmentSystem } from './game/apartmentUtils';  // 추가
 
 function App() {
   const gameRef = useRef(null);
@@ -57,9 +58,14 @@ function App() {
         this.worldHeight = 0;
         this.gameOverStarted = false;
         this.soundManager = null;
+        this.apartmentSystem = null;
+        
+        this.tileSize = 64;
+        this.spacing = 1.5;
       }
 
       preload() {
+        // 기본 이미지 로드
         this.load.image('cat1', './sources/cat1.png');
         this.load.image('cat2', './sources/cat2.png');
         this.load.image('building1', './sources/building1.png');
@@ -72,36 +78,51 @@ function App() {
         this.load.image('goal', './sources/ith.png');
         this.load.image('goalBackground', './sources/goalbackground.png');
 
+        // 아파트 이미지 로드
+        this.load.image('apt1', './sources/apt1.png');
+        this.load.image('apt2', './sources/apt2.png');
+        this.load.image('apt3', './sources/apt3.png');
+
+        // dust 이미지 로드 추가
+        this.load.image('dust1', './sources/dust1.png');
+        this.load.image('dust2', './sources/dust2.png');
+
+        // 사운드 매니저 초기화
         this.soundManager = new SoundManager(this);
         this.soundManager.preloadSounds();
       }
     
       create() {
         this.soundManager.playMainBGM();
-      
         createPlayerAnimations(this);
         createEnemyAnimations(this);
-      
         const player = createPlayer(this);
-        const { walls, fishes, worldWidth, worldHeight } = createMaze(this, player);
-      
+        const { walls, fishes, worldWidth, worldHeight, centerX, centerY } = createMaze(this, player);
+        
+        // 맵 중앙에 goal 생성
+        const centerPosX = centerX * this.tileSize * this.spacing;
+        const centerPosY = centerY * this.tileSize * this.spacing;
+        this.goal = createGoal(this, player, centerPosX, centerPosY);
+        
+        // 아파트 시스템 초기화
+        this.apartmentSystem = new ApartmentSystem(this, player, this.goal);
+        
         const cursors = this.input.keyboard.createCursorKeys();
         this.worldWidth = worldWidth;
         this.worldHeight = worldHeight;
         
         this.cameras.main.startFollow(player);
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
-      
         this.player = player;
         this.cursors = cursors;
         this.walls = walls;
-      
+        
         // 체력 변경 이벤트 리스너 설정
         this.events.on('changeHealth', handleHealthChange);
         
         // 체력 시스템 설정
         setupHealthSystem(this, player, fishes);
-      
+        
         // Enemy 스폰 타이머 설정
         const spawnDelay = Phaser.Math.Between(30000, 45000);
         this.time.delayedCall(spawnDelay, () => {
@@ -117,24 +138,8 @@ function App() {
             });
           }
         });
-      
-        // 골 도달 이벤트 처리
-        this.events.on('goalReached', () => {
-          this.soundManager.stopMainBGM();
-          if (this.enemy && this.enemy.enemySound) {
-            this.soundManager.stopEnemySound(this.enemy.enemySound);
-          }
-      
-          const victoryScene = this.scene.add('VictoryScene', VictoryScene, true);
-          this.scene.pause();
-      
-          victoryScene.events.once('victoryComplete', () => {
-            this.time.delayedCall(500, () => {
-              document.dispatchEvent(new CustomEvent('gameVictory'));
-            });
-          });
-        });
       }
+
       update() {
         if (this.player && this.cursors && !this.gameOverStarted) {
           handlePlayerMovement(this.player, this.cursors);
@@ -153,6 +158,11 @@ function App() {
         
         if (this.enemy && this.enemy.enemySound) {
           this.soundManager.stopEnemySound(this.enemy.enemySound);
+        }
+
+        // 아파트 시스템 정지
+        if (this.apartmentSystem) {
+          this.apartmentSystem.stopSpawning();
         }
 
         this.tweens.add({
@@ -178,13 +188,18 @@ function App() {
               onComplete: () => {
                 setTimeout(() => {
                   setIsGameOver(true);
-                  // 게임 씬 정지
                   this.scene.pause();
                 }, 500);
               }
             });
           }
         });
+      }
+
+      shutdown() {
+        if (this.apartmentSystem) {
+          this.apartmentSystem.destroy();
+        }
       }
     }
 
@@ -205,8 +220,10 @@ function App() {
     game.current = new Phaser.Game(config);
   }, [gameSize, handleHealthChange]);
 
+  // ... 나머지 코드는 동일 ...
+
   useEffect(() => {
-    if (showGame && !isGameOver) {  // isGameOver 조건 추가
+    if (showGame && !isGameOver) {
       createGame();
     }
 
@@ -221,7 +238,7 @@ function App() {
       if (game.current) game.current.destroy(true);
       document.removeEventListener('gameVictory', handleVictory);
     };
-  }, [showGame, createGame, isGameOver]);  // isGameOver 의존성 추가
+  }, [showGame, createGame, isGameOver]);
 
   const startGame = () => {
     setShowGame(true);
@@ -230,19 +247,17 @@ function App() {
   };
 
   const restartGame = () => {
-    setIsGameOver(false);  // 먼저 isGameOver를 false로 설정
+    setIsGameOver(false);
     setHealth(100);
+    setTimeout(() => {
+      if (game.current) {
+        game.current.destroy(true);
+      }
+      setShowGame(true);
+      createGame();
+    }, 100);
+  };
 
-        // 약간의 지연 후 게임 재시작
-        setTimeout(() => {
-          if (game.current) {
-            game.current.destroy(true);
-          }
-          setShowGame(true);
-          createGame();
-        }, 100);
-      };
-      
   return (
     <div style={{ 
       display: 'flex', 
