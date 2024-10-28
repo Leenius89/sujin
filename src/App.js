@@ -227,11 +227,25 @@ function App() {
       createGame();
     }
 
-    const handleVictory = () => {
-      setIsVictory(true);
-      setShowGame(false);
+    const handleVictory = (event) => {
+      const action = event.detail?.action;
+      
+      if (action === 'mainMenu') {
+        setIsVictory(true);
+        setShowGame(false);
+      } else if (action === 'retry') {
+        setIsVictory(false);
+        setHealth(100);
+        setShowGame(true);
+        setTimeout(() => {
+          if (game.current) {
+            game.current.destroy(true);
+          }
+          createGame();
+        }, 100);
+      }
     };
-
+  
     document.addEventListener('gameVictory', handleVictory);
 
     return () => {

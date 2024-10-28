@@ -24,9 +24,9 @@ export class SoundManager {
         } catch (error) {
           console.error('Error loading audio files:', error);
         }
-      }
+    }
     
-      initializeSounds() {
+    initializeSounds() {
         try {
           this.sounds = {
             mainBGM: this.scene.sound.add('mainBGM', { loop: true, volume: 0.5 }),
@@ -35,17 +35,30 @@ export class SoundManager {
             enemySound: this.scene.sound.add('enemySound', { loop: true, volume: 0 })
           };
           this.soundsLoaded = true;
-          console.log('Sounds initialized successfully'); // 디버깅용
+          console.log('Sounds initialized successfully');
         } catch (error) {
           console.error('Error initializing sounds:', error);
           this.soundsLoaded = false;
         }
-      }
+    }
   
     playMainBGM() {
-      if (this.soundsLoaded && this.sounds.mainBGM) {
+      if (this.soundsLoaded) {
         try {
+          // 기존 mainBGM이 있다면 제거
+          if (this.sounds.mainBGM) {
+            this.sounds.mainBGM.stop();
+            this.sounds.mainBGM.destroy();
+          }
+          
+          // 새로운 mainBGM 인스턴스 생성 및 재생
+          this.sounds.mainBGM = this.scene.sound.add('mainBGM', { 
+            loop: true, 
+            volume: 0.5 
+          });
+          
           this.sounds.mainBGM.play();
+          console.log('Main BGM started playing');
         } catch (error) {
           console.error('Error playing mainBGM:', error);
         }
@@ -75,7 +88,7 @@ export class SoundManager {
         } catch (error) {
           console.error('Error playing fish sound:', error);
         }
-      }
+    }
   
     playEnemySound() {
       if (this.soundsLoaded && this.sounds.enemySound) {
@@ -110,29 +123,33 @@ export class SoundManager {
   
     stopMainBGM() {
       if (this.soundsLoaded && this.sounds.mainBGM) {
-        this.scene.tweens.add({
-          targets: this.sounds.mainBGM,
-          volume: 0,
-          duration: 1000,
-          onComplete: () => {
-            this.sounds.mainBGM.stop();
-          }
-        });
+        this.sounds.mainBGM.stop();
+        this.sounds.mainBGM.destroy();
       }
     }
   
     stopEnemySound(enemySound) {
-      if (enemySound) {
-        this.scene.tweens.add({
-          targets: enemySound,
-          volume: 0,
-          duration: 500,
-          onComplete: () => {
-            enemySound.stop();
+      if (enemySound && enemySound.isPlaying) {
+        enemySound.stop();
+      }
+    }
+
+    stopAllSounds() {
+      if (this.soundsLoaded) {
+        // 모든 현재 재생 중인 사운드 중지
+        this.scene.sound.getAllPlaying().forEach(sound => {
+          sound.stop();
+        });
+
+        // 개별 사운드들도 중지 및 정리
+        Object.values(this.sounds).forEach(sound => {
+          if (sound && sound.isPlaying) {
+            sound.stop();
           }
         });
       }
     }
+    
     playConstructSound() {
         if (!this.soundsLoaded) {
           console.warn('Sounds not loaded yet');
@@ -155,5 +172,5 @@ export class SoundManager {
         } catch (error) {
           console.error('Error playing construct sound:', error);
         }
-      }
-  }
+    }
+}
