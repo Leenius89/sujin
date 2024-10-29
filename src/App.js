@@ -13,14 +13,16 @@ import { createMaze, updatePlayerDepth } from './game/mazeUtils';
 import { 
   createPlayer, 
   createPlayerAnimations, 
-  handlePlayerMovement 
+  handlePlayerMovement,
+  handlePlayerJump,
+  createMilkItems, 
 } from './game/playerUtils';
 import {
   createEnemy,
   createEnemyAnimations,
   handleEnemyMovement
 } from './game/enemyUtils';
-import { VictoryScene } from './game/victoryUtils';
+import { VictoryScene } from './game/victory/victoryUtils';
 import { createGoal } from './game/goalUtils';
 import { setupHealthSystem } from './game/healthUtils';
 import { SoundManager } from './game/soundUtils';
@@ -34,6 +36,9 @@ function App() {
   const [showGame, setShowGame] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isVictory, setIsVictory] = useState(false);
+  const [jumpCount, setJumpCount] = useState(0);
+  const [fishCount, setFishCount] = useState(0);
+  const [milkCount, setMilkCount] = useState(0);
 
   const handleHealthChange = useCallback((amount) => {
     setHealth(prevHealth => {
@@ -71,6 +76,7 @@ function App() {
         this.load.image('building1', './sources/building1.png');
         this.load.image('building2', './sources/building2.png');
         this.load.image('building3', './sources/building3.png');
+        this.load.image('milk', './sources/milk.png');
         this.load.image('fish1', './sources/fish1.png');
         this.load.image('fish2', './sources/fish2.png');
         this.load.image('enemy1', './sources/enemy1.png');
@@ -99,6 +105,53 @@ function App() {
         const player = createPlayer(this);
         const { walls, fishes, worldWidth, worldHeight, centerX, centerY } = createMaze(this, player);
         
+        // jumpCount 업데이트를 위한 이벤트 설정
+        this.events.on('updateJumpCount', (count) => {
+          setJumpCount(count);
+        });
+      
+        // player의 초기 jumpCount 설정
+        player.jumpCount = 0;
+        this.events.emit('updateJumpCount', 0);
+      
+        // milk 아이템 생성
+        const milks = createMilkItems(this, walls, player);
+      
+        // milk 충돌 처리
+        this.physics.add.overlap(player, milks, (player, milk) => {
+          if (!this.gameOverStarted) {
+            if (this.soundManager) {
+              this.soundManager.playFishSound();
+            }
+            player.jumpCount++;
+            this.events.emit('updateJumpCount', player.jumpCount);
+            milk.destroy();
+          }
+        });
+      
+        // 스페이스바 키 설정
+        const spaceBar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        spaceBar.on('down', () => {
+          handlePlayerJump(player, this);
+        });
+
+          // 아이템 카운트 초기화
+        this.registry.set('milkCount', 0);
+        this.registry.set('fishCount', 0);
+
+        // 아이템 수집 이벤트 리스너
+        this.events.on('collectMilk', () => {
+          const currentCount = this.registry.get('milkCount') || 0;
+          this.registry.set('milkCount', currentCount + 1);
+          setMilkCount(currentCount + 1);
+        });
+
+        this.events.on('collectFish', () => {
+          const currentCount = this.registry.get('fishCount') || 0;
+          this.registry.set('fishCount', currentCount + 1);
+          setFishCount(currentCount + 1);
+        });
+      
         // 맵 중앙에 goal 생성
         const centerPosX = centerX * this.tileSize * this.spacing;
         const centerPosY = centerY * this.tileSize * this.spacing;
@@ -220,8 +273,6 @@ function App() {
     game.current = new Phaser.Game(config);
   }, [gameSize, handleHealthChange]);
 
-  // ... 나머지 코드는 동일 ...
-
   useEffect(() => {
     if (showGame && !isGameOver) {
       createGame();
@@ -258,11 +309,17 @@ function App() {
     setShowGame(true);
     setHealth(100);
     setIsGameOver(false);
+    setMilkCount(0);
+    setFishCount(0);
+    setJumpCount(0);
   };
 
   const restartGame = () => {
     setIsGameOver(false);
     setHealth(100);
+    setMilkCount(0);
+    setFishCount(0);
+    setJumpCount(0);
     setTimeout(() => {
       if (game.current) {
         game.current.destroy(true);
@@ -272,35 +329,46 @@ function App() {
     }, 100);
   };
 
-  return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      minHeight: '100vh',
-      padding: '20px',
-      position: 'relative'
-    }}>
-      {showGame ? (
-        <>
-          <Header restartGame={restartGame} health={health} />
-          <div 
-            id="game-container" 
-            ref={gameRef} 
-            style={{ 
-              width: `${gameSize.width}px`, 
-              height: `${gameSize.height}px`,
-              marginTop: '20px'
-            }}
-          />
-        </>
-      ) : (
-        <MainPage onStartGame={startGame} />
-      )}
-      
-      {isGameOver && <GameOver onRetry={restartGame} />}
-    </div>
-  );
+// App.js의 return 부분
+return (
+  <div style={{ 
+    display: 'flex', 
+    flexDirection: 'column', 
+    alignItems: 'center', 
+    minHeight: '100vh',
+    padding: '20px',
+    position: 'relative'
+  }}>
+    {showGame ? (
+      <>
+        <Header 
+          restartGame={restartGame} 
+          health={health} 
+          jumpCount={jumpCount}  // jumpCount props 추가
+        />
+        <div 
+          id="game-container" 
+          ref={gameRef} 
+          style={{ 
+            width: `${gameSize.width}px`, 
+            height: `${gameSize.height}px`,
+            marginTop: '20px'
+          }}
+        />
+      </>
+    ) : (
+      <MainPage onStartGame={startGame} />
+    )}
+    
+    {isGameOver && (
+  <GameOver 
+    onRetry={restartGame} 
+    milkCount={milkCount} 
+    fishCount={fishCount} 
+  />
+)}
+  </div>
+);
 }
 
 export default App;

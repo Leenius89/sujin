@@ -10,9 +10,16 @@ export class ApartmentSystem {
     this.tileSize = 64;
     this.spacing = 1.5;
     this.wallScale = 0.22;
-    this.currentRow = 0;
     this.isGameOver = false;
     this.baseDepth = 1000;
+
+    // 각 방향별 현재 진행 상태
+    this.progress = {
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0
+    };
 
     // dust 애니메이션 생성
     this.createDustAnimation();
@@ -37,69 +44,123 @@ export class ApartmentSystem {
   }
 
   startApartmentSpawn() {
-    // 10초마다 새로운 아파트 행 생성
-    this.spawnTimer = this.scene.time.addEvent({
+    // 각 방향별로 타이머 설정
+    this.spawnTimers = {
+      top: this.createSpawnTimer('top'),
+      right: this.createSpawnTimer('right'),
+      bottom: this.createSpawnTimer('bottom'),
+      left: this.createSpawnTimer('left')
+    };
+
+    // 각 방향에서 첫 번째 행 즉시 생성
+    this.spawnApartmentRow('top');
+    this.spawnApartmentRow('right');
+    this.spawnApartmentRow('bottom');
+    this.spawnApartmentRow('left');
+  }
+
+  createSpawnTimer(direction) {
+    return this.scene.time.addEvent({
       delay: 10000,
-      callback: () => this.spawnApartmentRow(),
+      callback: () => this.spawnApartmentRow(direction),
       callbackScope: this,
       loop: true
     });
-
-    // 첫 번째 행 즉시 생성
-    this.spawnApartmentRow();
   }
 
-  spawnApartmentRow() {
-    if (this.isGameOver) return;
+  calculatePosition(direction, progress) {
+    switch (direction) {
+      case 'top':
+        return {
+          x: (index) => index * this.tileSize * this.spacing,
+          y: () => progress * this.tileSize * this.spacing
+        };
+      case 'right':
+        return {
+          x: () => (this.mazeSize - 1) * this.tileSize * this.spacing - progress * this.tileSize * this.spacing,
+          y: (index) => index * this.tileSize * this.spacing
+        };
+      case 'bottom':
+        return {
+          x: (index) => index * this.tileSize * this.spacing,
+          y: () => (this.mazeSize - 1) * this.tileSize * this.spacing - progress * this.tileSize * this.spacing
+        };
+      case 'left':
+        return {
+          x: () => progress * this.tileSize * this.spacing,
+          y: (index) => index * this.tileSize * this.spacing
+        };
+    }
+  }
 
-    const yPos = this.currentRow * this.tileSize * this.spacing;
+  spawnApartmentRow(direction) {
+    if (this.isGameOver || this.progress[direction] >= this.mazeSize / 2) return;
+
+    const getPosition = this.calculatePosition(direction, this.progress[direction]);
     const dustSprites = [];
 
-    // 기존 벽 제거 및 dust 생성
-    for (let x = 0; x < this.mazeSize; x++) {
-      const xPos = x * this.tileSize * this.spacing;
+    // 방향에 따라 반복 범위 결정
+    let range = this.mazeSize;
+    if (direction === 'right' || direction === 'left') {
+      range = this.mazeSize;
+    }
+
+    for (let i = 0; i < range; i++) {
+      const xPos = getPosition.x(i);
+      const yPos = getPosition.y(i);
+
+      // 이미 아파트가 있는지 확인
+      if (this.isPositionOccupied(xPos, yPos)) continue;
+
       this.removeExistingWalls(xPos, yPos);
 
       const dust = this.scene.add.sprite(xPos, yPos, 'dust1');
       dust.setScale(this.wallScale);
-      dust.setDepth(this.baseDepth + this.currentRow * 10);
+      dust.setDepth(this.baseDepth + this.progress[direction] * 10);
       
-      // 애니메이션 시작 및 완료 이벤트 설정
       dust.play('dust');
       dust.on('animationcomplete', () => {
-        this.createApartment(xPos, yPos, x, dust);
+        this.createApartment(xPos, yPos, i, dust, direction);
       });
       
       dustSprites.push(dust);
     }
 
-    // construct 사운드 재생
-    this.scene.soundManager.playConstructSound();
+    if (dustSprites.length > 0) {
+      this.scene.soundManager.playConstructSound();
+    }
 
-    this.currentRow++;
+    this.progress[direction]++;
     this.checkGameOver();
   }
 
-  createApartment(xPos, yPos, index, dust) {
-    const apartmentType = Phaser.Math.Between(1, 3);
+  isPositionOccupied(x, y) {
+    const tolerance = this.tileSize * this.spacing * 0.8; // 약간의 여유 허용
+    return this.apartments.getChildren().some(apartment => {
+      const distance = Phaser.Math.Distance.Between(x, y, apartment.x, apartment.y);
+      return distance < tolerance;
+    });
+  }
 
-    // 아파트 생성
-    const apartment = this.apartments.create(
-      xPos,
-      yPos,
-      `apt${apartmentType}`
-    );
+  createApartment(xPos, yPos, index, dust, direction) {
+    // 다시 한번 위치 확인 (애니메이션 도중 다른 아파트가 생겼을 수 있음)
+    if (this.isPositionOccupied(xPos, yPos)) {
+      dust.destroy();
+      return;
+    }
+
+    const apartmentType = Phaser.Math.Between(1, 3);
+    const apartment = this.apartments.create(xPos, yPos, `apt${apartmentType}`);
     
     apartment.setScale(this.wallScale);
     apartment.setOrigin(0.5, 0.5);
-    apartment.setDepth(this.baseDepth + (this.currentRow - 1) * 10);
+    apartment.setDepth(this.baseDepth + this.progress[direction] * 10);
 
     const imageWidth = apartment.width * this.wallScale;
     const imageHeight = apartment.height * this.wallScale;
     apartment.body.setSize(imageWidth, imageHeight);
     apartment.body.setOffset((apartment.width - imageWidth) / 2, (apartment.height - imageHeight) / 2);
 
-    // 아파트 등장 효과
     apartment.setAlpha(0);
     this.scene.tweens.add({
       targets: apartment,
@@ -123,7 +184,6 @@ export class ApartmentSystem {
   }
 
   checkCollisions(apartment) {
-    // 플레이어와 아파트 충돌 체크
     const playerBounds = this.player.getBounds();
     const apartmentBounds = apartment.getBounds();
 
@@ -132,7 +192,6 @@ export class ApartmentSystem {
       return;
     }
 
-    // 골과 아파트 충돌 체크
     if (this.goal) {
       const goalBounds = this.goal.getBounds();
       if (Phaser.Geom.Rectangle.Overlaps(goalBounds, apartmentBounds)) {
@@ -142,7 +201,8 @@ export class ApartmentSystem {
   }
 
   checkGameOver() {
-    if (this.currentRow >= this.mazeSize) {
+    // 모든 방향이 중간까지 도달했는지 확인
+    if (Object.values(this.progress).every(p => p >= this.mazeSize / 2)) {
       this.stopSpawning();
     }
   }
@@ -155,9 +215,9 @@ export class ApartmentSystem {
   }
 
   stopSpawning() {
-    if (this.spawnTimer) {
-      this.spawnTimer.remove();
-      this.spawnTimer = null;
+    if (this.spawnTimers) {
+      Object.values(this.spawnTimers).forEach(timer => timer.remove());
+      this.spawnTimers = null;
     }
   }
 

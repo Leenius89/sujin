@@ -95,16 +95,12 @@ export const createMaze = (scene, player) => {
 
   scene.physics.add.collider(player, walls);
   
-  // fish 충돌 처리를 여기서 직접 설정
   scene.physics.add.overlap(player, fishes, (player, fish) => {
     if (!scene.gameOverStarted) {
-      // 사운드 재생 (직접 호출)
       scene.soundManager.playFishSound();
-      
-      // 체력 회복
       scene.events.emit('changeHealth', 20);
-      
-      // fish 제거
+      // fish 카운트 업데이트
+      scene.events.emit('collectFish');
       fish.destroy();
     }
   });

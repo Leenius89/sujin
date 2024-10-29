@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { VictoryScene } from './victoryUtils';
+import { VictoryScene } from './victory/victoryUtils';
 
 const create8BitTransition = (scene, player) => {
   return new Promise((resolve) => {
@@ -68,7 +68,6 @@ export const createGoal = (scene, player, centerX, centerY) => {
   const goal = scene.physics.add.sprite(centerX, centerY, 'goal');
   goal.setScale(0.1);
   
-  // 정확한 충돌 영역 설정
   const hitboxScale = 1.2;
   const hitboxSize = goal.width * goal.scale * hitboxScale;
   goal.body.setCircle(hitboxSize / 2);
@@ -77,42 +76,58 @@ export const createGoal = (scene, player, centerX, centerY) => {
   let isVictoryHandled = false;
 
   scene.physics.add.overlap(player, goal, async () => {
-    if (isVictoryHandled) return;
-    isVictoryHandled = true;
+      if (isVictoryHandled) return;
+      isVictoryHandled = true;
 
-    // 모든 움직임 즉시 정지
-    scene.physics.pause();
-    player.setVelocity(0, 0);
-
-    try {
-      // 모든 사운드 즉시 중지
-      if (scene.soundManager) {
-        scene.soundManager.stopAllSounds();
+      // 모든 게임 물리 정지
+      scene.physics.pause();
+      
+      // 모든 움직임 정지
+      player.setVelocity(0, 0);
+      if (scene.enemy) {
+          scene.enemy.setVelocity(0, 0);
       }
 
-      // player의 현재 화면을 중심으로 하는 8bit 스타일 전환 효과
-      await create8BitTransition(scene, player);
-
-      // 전환 효과 완료 후 main BGM 재생
-      if (scene.soundManager) {
-        scene.soundManager.playMainBGM();
+      // 아파트 시스템 정지
+      if (scene.apartmentSystem) {
+          scene.apartmentSystem.stopSpawning();
       }
 
-      // Victory 씬으로 전환
-      scene.time.delayedCall(500, () => {
-        scene.scene.add('VictoryScene', VictoryScene, true);
-        scene.scene.pause();
-        scene.scene.setVisible(false);
-        
-        document.dispatchEvent(new CustomEvent('gameVictory'));
-      });
-    } catch (error) {
-      console.error('Transition failed:', error);
-    }
+      try {
+          // 모든 사운드 즉시 중지
+          scene.soundManager.stopAllSounds();
+
+          // 화면 전환 효과
+          await create8BitTransition(scene, player);
+
+          // BGM만 재생
+          scene.soundManager.playMainBGM();
+
+          // Victory 씬으로 전환
+          scene.time.delayedCall(500, () => {
+              // 현재 씬의 모든 업데이트 중지
+              scene.scene.pause();
+              
+              // Enemy AI 정지
+              if (scene.enemy && scene.enemy.enemySound) {
+                  scene.soundManager.stopEnemySound(scene.enemy.enemySound);
+              }
+
+              // Victory 씬 시작
+              scene.scene.add('VictoryScene', VictoryScene, true, {
+                  milkCount: scene.registry.get('milkCount') || 0,
+                  fishCount: scene.registry.get('fishCount') || 0
+              });
+              scene.scene.setVisible(false);
+          });
+
+      } catch (error) {
+          console.error('Transition failed:', error);
+      }
   });
 
   if (scene.walls) {
-    scene.physics.add.collider(goal, scene.walls);
+      scene.physics.add.collider(goal, scene.walls);
   }
 
   return goal;

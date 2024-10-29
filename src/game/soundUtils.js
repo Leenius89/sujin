@@ -18,6 +18,7 @@ export class SoundManager {
           this.scene.load.audio('construct1', 'sources/construct1.mp3');
           this.scene.load.audio('construct2', 'sources/construct2.mp3');
           this.scene.load.audio('construct3', 'sources/construct3.mp3');
+          this.scene.load.audio('jumpSound', 'sources/jump.mp3');
     
           // 로드 완료 이벤트 설정
           this.scene.load.on('complete', this.initializeSounds.bind(this));
@@ -32,15 +33,25 @@ export class SoundManager {
             mainBGM: this.scene.sound.add('mainBGM', { loop: true, volume: 0.5 }),
             fishSound: this.scene.sound.add('fishSound', { loop: false, volume: 0.5 }),
             dyingSound: this.scene.sound.add('dyingSound', { loop: false, volume: 0.5 }),
-            enemySound: this.scene.sound.add('enemySound', { loop: true, volume: 0 })
+            enemySound: this.scene.sound.add('enemySound', { loop: true, volume: 0 }),
           };
+          this.sounds.jumpSound = this.scene.sound.add('jumpSound', { loop: false, volume: 0.3 });
           this.soundsLoaded = true;
-          console.log('Sounds initialized successfully');
         } catch (error) {
           console.error('Error initializing sounds:', error);
           this.soundsLoaded = false;
         }
-    }
+      }
+
+      playJumpSound() {
+        if (this.soundsLoaded && this.sounds.jumpSound) {
+          try {
+            this.sounds.jumpSound.play();
+          } catch (error) {
+            console.error('Error playing jumpSound:', error);
+          }
+        }
+      }
   
     playMainBGM() {
       if (this.soundsLoaded) {
@@ -136,19 +147,22 @@ export class SoundManager {
 
     stopAllSounds() {
       if (this.soundsLoaded) {
-        // 모든 현재 재생 중인 사운드 중지
-        this.scene.sound.getAllPlaying().forEach(sound => {
-          sound.stop();
-        });
-
-        // 개별 사운드들도 중지 및 정리
-        Object.values(this.sounds).forEach(sound => {
-          if (sound && sound.isPlaying) {
-            sound.stop();
-          }
-        });
+          // 현재 재생 중인 모든 사운드 중지
+          this.scene.sound.getAllPlaying().forEach(sound => {
+              sound.stop();
+          });
+  
+          // 개별 사운드들도 명시적으로 중지 및 정리
+          Object.values(this.sounds).forEach(sound => {
+              if (sound && sound.isPlaying) {
+                  sound.stop();
+              }
+          });
+  
+          // 타이머나 사운드 이벤트 정리
+          this.scene.sound.removeAllListeners();
       }
-    }
+  }
     
     playConstructSound() {
         if (!this.soundsLoaded) {
