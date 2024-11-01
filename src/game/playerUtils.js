@@ -87,18 +87,18 @@ export const handlePlayerMovement = (player, cursors) => {
   }
 };
 
-// 점프 처리
-// handlePlayerJump 함수도 수정
 export const handlePlayerJump = (player, scene) => {
   if (!player || player.isJumping || player.jumpCount <= 0) return false;
 
   try {
+    const direction = player.lastDirection;
+    const angle = direction === 'left' ? Math.PI : 0;
+    
+    // 점프 전 벽 체크
     const lookAheadDist = 80;
-    let angle = player.lastDirection === 'left' ? Math.PI : 0;
-
     const lookX = player.x + Math.cos(angle) * lookAheadDist;
     const lookY = player.y + Math.sin(angle) * lookAheadDist;
-
+    
     const bounds = new Phaser.Geom.Rectangle(
       lookX - 16, 
       lookY - 16, 
@@ -111,84 +111,60 @@ export const handlePlayerJump = (player, scene) => {
     );
 
     if (hasWallAhead) {
-      player.isJumping = true;
       player.jumpCount--;
       scene.events.emit('updateJumpCount', player.jumpCount);
-
+      
       if (scene.soundManager) {
         scene.soundManager.playJumpSound();
       }
 
-      performPlayerJump(player, scene, angle);
-      return true;
-    }
-  } catch (error) {
-    console.error('HandleJump error:', error);
-    if (player) {
-      player.isJumping = false;
-    }
-  }
-  return false;
-};
+      // 점프 시작
+      player.isJumping = true;
+      const jumpHeight = 150;
+      const jumpDistance = 200;
+      const jumpDuration = 600;
+      const startY = player.y;
+      const targetX = player.x + Math.cos(angle) * jumpDistance;
+      const targetY = player.y + Math.sin(angle) * jumpDistance;
 
-// 점프 동작 수행
-const performPlayerJump = (player, scene, angle) => {
-  try {
-    const jumpHeight = 150;
-    const jumpDistance = 200;
-    const jumpDuration = 600;
+      // 그림자 효과
+      const shadow = scene.add.ellipse(player.x, player.y + 5, 40, 10, 0x000000, 0.3);
+      shadow.setDepth(player.depth - 1);
 
-    // 시작 위치 저장
-    const startY = player.y;  // 이 부분이 빠져있었습니다
-    const targetX = player.x + Math.cos(angle) * jumpDistance;
-    const targetY = player.y + Math.sin(angle) * jumpDistance;
-
-    // 그림자 효과
-    const shadow = scene.add.ellipse(player.x, player.y + 5, 40, 10, 0x000000, 0.3);
-    shadow.setDepth(player.depth - 1);
-
-    // 단일 Tween으로 통합
-    scene.tweens.add({
-      targets: player,
-      x: targetX,
-      // y 속성은 직접 업데이트
-      duration: jumpDuration,
-      ease: 'Linear',
-      onUpdate: (tween) => {
-        const progress = tween.progress;
-        const heightOffset = Math.sin(progress * Math.PI) * jumpHeight;
-        player.y = Phaser.Math.Linear(startY, targetY, progress) - heightOffset;
-        
-        if (shadow) {
+      // 단일 Tween으로 점프 실행
+      scene.tweens.add({
+        targets: player,
+        x: targetX,
+        duration: jumpDuration,
+        ease: 'Linear',
+        onUpdate: (tween) => {
+          const progress = tween.progress;
+          const heightOffset = Math.sin(progress * Math.PI) * jumpHeight;
+          player.y = Phaser.Math.Linear(startY, targetY, progress) - heightOffset;
+          
           shadow.setPosition(player.x, player.y + 5);
           shadow.setAlpha(0.3 * (1 - Math.sin(progress * Math.PI) * 0.5));
-        }
-      },
-      onComplete: () => {
-        if (player) {  // player 객체 확인
+        },
+        onComplete: () => {
           player.isJumping = false;
-          player.y = targetY;  // 최종 위치 확실히 설정
-        }
-        if (shadow) {
+          player.y = targetY;
+          shadow.destroy();
+        },
+        onStop: () => {
+          player.isJumping = false;
           shadow.destroy();
         }
-      },
-      onStop: () => {  // 중단됐을 때 처리
-        if (player) {
-          player.isJumping = false;
-        }
-        if (shadow) {
-          shadow.destroy();
-        }
-      }
-    });
-
+      });
+      
+      return true;
+    }
   } catch (error) {
     console.error('Jump error:', error);
     if (player) {
       player.isJumping = false;
     }
   }
+  return false;
 };
 
 // milk 아이템 생성

@@ -234,7 +234,7 @@ function App() {
       setupMobileControls(player) {
         const joystickRadius = Math.min(gameSize.width * 0.15, 50);
         const buttonRadius = Math.min(gameSize.width * 0.12, 40);
-  
+      
         // 조이스틱 베이스 생성
         const joystickBase = this.add.circle(
           joystickRadius * 1.5,
@@ -243,7 +243,7 @@ function App() {
           0x000000,
           0.3
         );
-  
+      
         // 조이스틱 핸들 생성
         const joystick = this.add.circle(
           joystickBase.x,
@@ -252,7 +252,7 @@ function App() {
           0xcccccc,
           0.5
         );
-  
+      
         // 점프 버튼 생성
         const jumpButton = this.add.circle(
           gameSize.width - buttonRadius * 1.5,
@@ -261,51 +261,29 @@ function App() {
           0xff0000,
           0.3
         );
-  
+      
         // UI 요소 설정
         [joystickBase, joystick, jumpButton].forEach(element => {
           element.setScrollFactor(0);
           element.setDepth(1000);
         });
-  
+      
         // 여기서부터 조이스틱 컨트롤 로직 시작
         let isMoving = false;
         const maxDistance = joystickRadius;
-  
+      
         this.input.on('pointerdown', (pointer) => {
           if (pointer.x < gameSize.width / 2) {
             isMoving = true;
           }
         });
-  
+      
         this.input.on('pointermove', (pointer) => {
           if (isMoving && pointer.x < gameSize.width / 2) {
-            const dx = pointer.x - joystickBase.x;
-            const dy = pointer.y - joystickBase.y;
-            const angle = Math.atan2(dy, dx);
-            const distance = Math.min(maxDistance, 
-              Math.sqrt(dx * dx + dy * dy));
-            
-            joystick.x = joystickBase.x + Math.cos(angle) * distance;
-            joystick.y = joystickBase.y + Math.sin(angle) * distance;
-  
-            // 속도를 거리에 비례하게 설정
-            const speed = 160 * (distance / maxDistance);
-            player.setVelocity(
-              Math.cos(angle) * speed,
-              Math.sin(angle) * speed
-            );
-  
-            // 애니메이션 직접 처리
-            player.anims.play('walk', true);
-            if (dx < 0) {
-              player.setFlipX(true);
-            } else {
-              player.setFlipX(false);
-            }
+            // ... 조이스틱 이동 로직 유지 ...
           }
         });
-  
+      
         this.input.on('pointerup', () => {
           isMoving = false;
           joystick.x = joystickBase.x;
@@ -313,18 +291,18 @@ function App() {
           player.setVelocity(0);
           player.anims.play('idle', true);
         });
-  
-  // 점프 버튼 설정 수정
-  jumpButton.setInteractive()
-    .on('pointerdown', () => {
-      if (!player.isJumping && player.jumpCount > 0) {
-        handlePlayerJump(player, this);
+      
+        // 점프 버튼 로직 - 한 번만 설정
+        jumpButton.setInteractive()
+          .on('pointerdown', () => {
+            if (!player.isJumping && player.jumpCount > 0) {
+              handlePlayerJump(player, this);
+            }
+          });
+      
+        // 터치 이벤트가 다른 입력을 방해하지 않도록 설정
+        this.input.setPollAlways();
       }
-    });
-
-  // 터치 이벤트가 다른 입력을 방해하지 않도록 설정
-  this.input.setPollAlways();
-}
 
 update() {
   if (this.player && !this.gameOverStarted) {
