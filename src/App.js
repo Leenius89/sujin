@@ -39,43 +39,51 @@ function App() {
   const [milkCount, setMilkCount] = useState(0);
   const [orientation, setOrientation] = useState('portrait');
 
-  // 화면 크기 및 방향 감지
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       const height = window.innerHeight;
-      const aspectRatio = width / height;
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      let newWidth, newHeight;
-
+  
       if (isMobile) {
-        if (aspectRatio > 1) {
-          setOrientation('landscape');
-          newWidth = Math.min(height * 0.75, width);
-          newHeight = height;
+        // 모바일에서는 화면의 90%만 사용하고, 비율을 16:9로 유지
+        const maxWidth = width * 0.9;
+        const maxHeight = height * 0.9;
+        const aspectRatio = 16 / 9;
+  
+        let newWidth, newHeight;
+        if (width / height > aspectRatio) {
+          // 화면이 더 넓은 경우
+          newHeight = maxHeight;
+          newWidth = maxHeight * aspectRatio;
         } else {
-          setOrientation('portrait');
-          newWidth = width;
-          newHeight = Math.min(width * 1.33, height);
+          // 화면이 더 좁은 경우
+          newWidth = maxWidth;
+          newHeight = maxWidth / aspectRatio;
         }
+  
+        setGameSize({
+          width: Math.min(newWidth, 800), // 최대 너비 제한
+          height: Math.min(newHeight, 1000) // 최대 높이 제한
+        });
       } else {
-        newWidth = Math.min(768, width * 0.9);
-        newHeight = Math.min(1024, height * 0.9);
+        // 데스크톱 크기 유지
+        setGameSize({
+          width: Math.min(768, width * 0.9),
+          height: Math.min(1024, height * 0.9)
+        });
       }
-
-      setGameSize({ width: newWidth, height: newHeight });
-
+  
       if (game.current) {
-        game.current.scale.resize(newWidth, newHeight);
+        game.current.scale.resize(gameSize.width, gameSize.height);
         game.current.scale.refresh();
       }
     };
-
+  
     handleResize();
     window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', handleResize);
-
+  
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
@@ -222,66 +230,123 @@ function App() {
           }
         });
       }
-
-      // 모바일 컨트롤 설정
       setupMobileControls(player) {
-        // 가상 조이스틱 생성
-        const joystickBase = this.add.circle(100, gameSize.height - 100, 50, 0x000000, 0.5);
-        const joystick = this.add.circle(100, gameSize.height - 100, 25, 0xcccccc, 0.8);
-        
-        joystickBase.setScrollFactor(0);
-        joystick.setScrollFactor(0);
-        joystickBase.setDepth(1000);
-        joystick.setDepth(1001);
-
+        const joystickRadius = Math.min(gameSize.width * 0.15, 50);
+        const buttonRadius = Math.min(gameSize.width * 0.12, 40);
+  
+        // 조이스틱 베이스 생성
+        const joystickBase = this.add.circle(
+          joystickRadius * 1.5,
+          gameSize.height - joystickRadius * 1.5,
+          joystickRadius,
+          0x000000,
+          0.3
+        );
+  
+        // 조이스틱 핸들 생성
+        const joystick = this.add.circle(
+          joystickBase.x,
+          joystickBase.y,
+          joystickRadius * 0.5,
+          0xcccccc,
+          0.5
+        );
+  
         // 점프 버튼 생성
-        const jumpButton = this.add.circle(gameSize.width - 100, gameSize.height - 100, 40, 0xff0000, 0.5);
-        jumpButton.setScrollFactor(0);
-        jumpButton.setDepth(1000);
-        jumpButton.setInteractive();
-        jumpButton.on('pointerdown', () => {
-          handlePlayerJump(player, this);
+        const jumpButton = this.add.circle(
+          gameSize.width - buttonRadius * 1.5,
+          gameSize.height - buttonRadius * 1.5,
+          buttonRadius,
+          0xff0000,
+          0.3
+        );
+  
+        // UI 요소 설정
+        [joystickBase, joystick, jumpButton].forEach(element => {
+          element.setScrollFactor(0);
+          element.setDepth(1000);
         });
-
-        // 조이스틱 컨트롤
+  
+        // 여기서부터 조이스틱 컨트롤 로직 시작
         let isMoving = false;
+        const maxDistance = joystickRadius;
+  
         this.input.on('pointerdown', (pointer) => {
           if (pointer.x < gameSize.width / 2) {
             isMoving = true;
           }
         });
-
+  
         this.input.on('pointermove', (pointer) => {
           if (isMoving && pointer.x < gameSize.width / 2) {
             const dx = pointer.x - joystickBase.x;
             const dy = pointer.y - joystickBase.y;
             const angle = Math.atan2(dy, dx);
-            const distance = Math.min(50, Math.sqrt(dx * dx + dy * dy));
+            const distance = Math.min(maxDistance, 
+              Math.sqrt(dx * dx + dy * dy));
             
             joystick.x = joystickBase.x + Math.cos(angle) * distance;
             joystick.y = joystickBase.y + Math.sin(angle) * distance;
-
-            const speed = 160 * (distance / 50);
+  
+            // 속도를 거리에 비례하게 설정
+            const speed = 160 * (distance / maxDistance);
             player.setVelocity(
               Math.cos(angle) * speed,
               Math.sin(angle) * speed
             );
+  
+            // 애니메이션 직접 처리
+            player.anims.play('walk', true);
+            if (dx < 0) {
+              player.setFlipX(true);
+            } else {
+              player.setFlipX(false);
+            }
           }
         });
-
+  
         this.input.on('pointerup', () => {
           isMoving = false;
           joystick.x = joystickBase.x;
           joystick.y = joystickBase.y;
           player.setVelocity(0);
+          player.anims.play('idle', true);
+        });
+  
+        // 점프 버튼 설정
+        jumpButton.setInteractive();
+        jumpButton.on('pointerdown', () => {
+          handlePlayerJump(player, this);
         });
       }
 
       update() {
-        if (this.player && this.cursors && !this.gameOverStarted) {
-          if (!this.input.activePointer.isDown) {
+        if (this.player && !this.gameOverStarted) {
+          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+          
+          if (isMobile) {
+            // 모바일에서는 속도 기반으로 애니메이션 처리
+            const speed = Math.sqrt(
+              Math.pow(this.player.body.velocity.x, 2) + 
+              Math.pow(this.player.body.velocity.y, 2)
+            );
+      
+            if (speed > 10) {  // 최소 속도 임계값
+              this.player.anims.play('walk', true);
+              // 방향 설정
+              if (this.player.body.velocity.x < 0) {
+                this.player.setFlipX(true);
+              } else if (this.player.body.velocity.x > 0) {
+                this.player.setFlipX(false);
+              }
+            } else {
+              this.player.anims.play('idle', true);
+            }
+          } else {
+            // 데스크톱 동작 유지
             handlePlayerMovement(this.player, this.cursors);
           }
+      
           updatePlayerDepth(this.player, 21);
           
           if (this.enemySpawned && this.enemy) {
