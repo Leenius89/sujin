@@ -1,163 +1,111 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-const MainPage = ({ onStartGame, gameSize }) => {
- const [showButton, setShowButton] = useState(false);
- const [showTitle, setShowTitle] = useState(false);
- const [catArrived, setCatArrived] = useState(false);
+const MainPage = ({ onStartGame }) => {
+  const [showButton, setShowButton] = useState(false);
+  const [showTitle, setShowTitle] = useState(false);
+  const [cameraPosition, setCameraPosition] = useState(0);
 
- // 고양이 애니메이션 컴포넌트
- const WalkingCat = () => (
-   <motion.div
-     style={{
-       width: '8rem',
-       height: '8rem',
-       position: 'absolute',
-       top: '50%',
-       left: '50%',
-       transform: 'translate(-50%, -50%)',
-     }}
-     initial={{ x: '100vw' }}
-     animate={{ x: 0 }}
-     transition={{ 
-       duration: 2,
-       ease: "linear"
-     }}
-     onAnimationComplete={() => {
-       setCatArrived(true);
-       setShowButton(true);
-     }}
-   >
-     {/* 애니메이션용 이미지 컨테이너 */}
-     <motion.div
-       style={{
-         width: '100%',
-         height: '100%',
-         position: 'relative',
-         transform: 'scaleX(-1)',  // 고양이 반전
-       }}
-     >
-       {/* cat1 이미지 */}
-       <motion.img
-         src="/sources/cat1.png"
-         alt="Cat Walking 1"
-         style={{
-           width: '100%',
-           height: '100%',
-           objectFit: 'contain',
-           position: 'absolute',
-           left: 0,
-           top: 0,
-         }}
-         animate={{
-           opacity: catArrived ? 1 : [1, 0]
-         }}
-         transition={{
-           duration: 0.25,
-           repeat: catArrived ? 0 : Infinity,
-           repeatType: "reverse"
-         }}
-       />
-       {/* cat2 이미지 */}
-       <motion.img
-         src="/sources/cat2.png"
-         alt="Cat Walking 2"
-         style={{
-           width: '100%',
-           height: '100%',
-           objectFit: 'contain',
-           position: 'absolute',
-           left: 0,
-           top: 0,
-         }}
-         animate={{
-           opacity: catArrived ? 0 : [0, 1]
-         }}
-         transition={{
-           duration: 0.25,
-           repeat: catArrived ? 0 : Infinity,
-           repeatType: "reverse"
-         }}
-       />
-     </motion.div>
-   </motion.div>
- );
+  useEffect(() => {
+    // Start camera pan animation after a short delay
+    setTimeout(() => {
+      setCameraPosition(1);
+      // Show title after camera reaches top
+      setTimeout(() => {
+        setShowTitle(true);
+        // Show button after title animation
+        setTimeout(() => {
+          setShowButton(true);
+        }, 2000);
+      }, 2000);
+    }, 500);
+  }, []);
 
- return (
-   <div style={{
-     width: `${gameSize.width}px`,
-     height: `${gameSize.height}px`,
-     backgroundColor: '#2d3748',
-     display: 'flex',
-     flexDirection: 'column',
-     alignItems: 'center',
-     position: 'relative',
-     overflow: 'hidden',
-     margin: '0 auto'
-   }}>
-     {/* 타이틀 */}
-     <motion.div
-       style={{
-         position: 'absolute',
-         top: '20%',
-         left: '50%',
-         transform: 'translateX(-50%)',
-         textAlign: 'center'
-       }}
-       initial={{ opacity: 0 }}
-       animate={{ opacity: catArrived ? 1 : 0 }}
-       transition={{ duration: 1 }}
-     >
-       <h1 style={{
-         fontSize: '2.5rem',
-         fontWeight: 'bold',
-         color: 'white',
-         margin: 0,
-         whiteSpace: 'nowrap'
-       }}>
-         Maze Whiskers
-       </h1>
-     </motion.div>
+  return (
+    <div className="w-full h-screen relative overflow-hidden bg-gray-900">
+      {/* Background with camera pan effect */}
+      <motion.div
+        className="w-full h-[200vh] relative"
+        initial={{ y: "0%" }}
+        animate={{ y: cameraPosition ? "-50%" : "0%" }}
+        transition={{ duration: 2, ease: "easeInOut" }}
+      >
+        <img 
+          src="/sources/main.png" 
+          alt="Background" 
+          className="w-full h-full object-cover"
+        />
+      </motion.div>
 
-     {/* 걷는 고양이 */}
-     <WalkingCat />
+      {/* Title with pixel animation effect */}
+      <motion.div
+        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center"
+        initial={{ opacity: 0 }}
+        animate={{ 
+          opacity: showTitle ? 1 : 0,
+        }}
+        transition={{ duration: 0.1 }}
+      >
+        <motion.h1
+          className="text-6xl font-bold text-white font-pixel"
+          style={{ 
+            textShadow: '2px 2px 0 #000',
+            fontFamily: "'Press Start 2P', cursive"
+          }}
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            visible: { opacity: 1, y: 0 }
+          }}
+          initial="hidden"
+          animate={showTitle ? "visible" : "hidden"}
+          transition={{
+            duration: 0.5,
+            type: "spring",
+            stiffness: 50,
+            mass: 0.1,
+            steps: 4  // Makes the animation appear choppy/pixelated
+          }}
+        >
+          Maze Whiskers
+        </motion.h1>
+      </motion.div>
 
-     {/* 시작 버튼 */}
-     {showButton && (
-       <motion.button
-         style={{
-           padding: '0.75rem 1.5rem',
-           backgroundColor: '#e53e3e',
-           color: 'white',
-           fontWeight: 'bold',
-           borderRadius: '0.5rem',
-           boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-           border: 'none',
-           cursor: 'pointer',
-           fontSize: '1.25rem',
-           position: 'absolute',
-           left: '50%',
-           top: '65%',
-           transform: 'translateX(-50%)',
-           zIndex: 10,
-           whiteSpace: 'nowrap'
-         }}
-         initial={{ scale: 0, opacity: 0 }}
-         animate={{ scale: 1, opacity: 1 }}
-         transition={{ 
-           type: "spring",
-           stiffness: 260,
-           damping: 20,
-           duration: 0.6
-         }}
-         whileHover={{ scale: 1.1 }}
-         onClick={onStartGame}
-       >
-         GAME START
-       </motion.button>
-     )}
-   </div>
- );
+      {/* Pixel art start button */}
+      {showButton && (
+        <motion.button
+          className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 px-8 py-4 bg-red-600 text-white font-pixel"
+          style={{
+            fontFamily: "'Press Start 2P', cursive",
+            imageRendering: 'pixelated',
+            boxShadow: '4px 4px 0 #000',
+            border: '4px solid #000'
+          }}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{
+            duration: 0.3,
+            type: "spring",
+            stiffness: 200,
+            damping: 15,
+            steps: 5  // Pixelated animation effect
+          }}
+          whileHover={{ 
+            scale: 1.1,
+            transition: { duration: 0.1 }
+          }}
+          onClick={onStartGame}
+        >
+          GAME START
+        </motion.button>
+      )}
+
+      {/* Add font loading for pixel art style */}
+      <link 
+        href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" 
+        rel="stylesheet"
+      />
+    </div>
+  );
 };
 
 export default MainPage;
