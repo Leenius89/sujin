@@ -1,12 +1,12 @@
 import React from 'react';
 
-const Header = ({ restartGame, health, jumpCount, orientation }) => {
+const Header = ({ restartGame, health, jumpCount, orientation, gameSize }) => {
   const headerHeight = orientation === 'portrait' ? '50px' : '40px';
   const fontSize = orientation === 'portrait' ? '1rem' : '0.8rem';
   
   return (
     <div style={{
-      width: '100%',
+      width: `${gameSize.width}px`,
       height: headerHeight,
       backgroundColor: '#F5E5DC',
       display: 'flex',
@@ -16,6 +16,7 @@ const Header = ({ restartGame, health, jumpCount, orientation }) => {
       boxSizing: 'border-box',
       position: 'relative',
       zIndex: 1000,
+      margin: '0 auto',
     }}>
       <h1 
         style={{ 

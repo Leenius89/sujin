@@ -495,6 +495,7 @@ update() {
             health={health} 
             jumpCount={jumpCount}
             orientation={orientation}
+            gameSize={gameSize}  // gameSize prop 추가
           />
           <div 
             id="game-container" 
