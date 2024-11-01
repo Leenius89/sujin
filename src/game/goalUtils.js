@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import { VictoryScene } from './victory/victoryUtils';
 
 const create8BitTransition = (scene, player) => {

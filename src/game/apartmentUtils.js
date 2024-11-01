@@ -90,8 +90,13 @@ export class ApartmentSystem {
           x: () => progress * this.tileSize * this.spacing,
           y: (index) => index * this.tileSize * this.spacing
         };
+      default:
+        return {
+          x: (index) => index * this.tileSize * this.spacing,
+          y: () => progress * this.tileSize * this.spacing
+        };
     }
-  }
+}
 
   spawnApartmentRow(direction) {
     if (this.isGameOver || this.progress[direction] >= this.mazeSize / 2) return;

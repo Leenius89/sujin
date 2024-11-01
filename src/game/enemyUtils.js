@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { createEnemy, createEnemyAnimations } from './enemyCreation';
-import { updateEnemyAnimation } from './enemyAnimations';
 
 const handleEnemyMovement = (enemy, player, scene) => {
   if (!enemy.active) {

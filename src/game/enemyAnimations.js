@@ -43,14 +43,11 @@ export const handleWallJump = (enemy, scene, player) => {
 };
 
 const performJump = (enemy, scene, angle) => {
-  // 점프 높이와 거리 계산
+  // startX 변수 제거하고 직접 사용
   const jumpHeight = 150;
   const jumpDistance = 200;
   const jumpDuration = 600;
 
-  // 이동 전 위치 저장
-  const startX = enemy.x;
-  const startY = enemy.y;
   const targetX = enemy.x + Math.cos(angle) * jumpDistance;
   const targetY = enemy.y + Math.sin(angle) * jumpDistance;
 

@@ -132,8 +132,6 @@ const performPlayerJump = (player, scene, angle) => {
   const jumpDuration = 600;
 
   // 이동 전 위치 저장
-  const startX = player.x;
-  const startY = player.y;
   const targetX = player.x + Math.cos(angle) * jumpDistance;
   const targetY = player.y + Math.sin(angle) * jumpDistance;
 
