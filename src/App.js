@@ -314,17 +314,23 @@ function App() {
           player.anims.play('idle', true);
         });
   
-        // 점프 버튼 설정
-        jumpButton.setInteractive();
-        jumpButton.on('pointerdown', () => {
-          handlePlayerJump(player, this);
-        });
+  // 점프 버튼 설정 수정
+  jumpButton.setInteractive()
+    .on('pointerdown', () => {
+      if (!player.isJumping && player.jumpCount > 0) {
+        handlePlayerJump(player, this);
       }
+    });
 
-      update() {
-        if (this.player && !this.gameOverStarted) {
-          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  // 터치 이벤트가 다른 입력을 방해하지 않도록 설정
+  this.input.setPollAlways();
+}
+
+update() {
+  if (this.player && !this.gameOverStarted) {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
           
+        if (!this.player.isJumping) {  // 점프 중이 아닐 때만 이동 처리
           if (isMobile) {
             // 모바일에서는 속도 기반으로 애니메이션 처리
             const speed = Math.sqrt(
@@ -354,7 +360,13 @@ function App() {
             handleEnemyMovement(this.enemy, this.player, this);
           }
         }
+        updatePlayerDepth(this.player, 21);
+    
+        if (this.enemySpawned && this.enemy) {
+          handleEnemyMovement(this.enemy, this.player, this);
+        }
       }
+    }
     
       gameOverAnimation() {
         this.gameOverStarted = true;
