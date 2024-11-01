@@ -33,7 +33,7 @@ function App() {
   const [health, setHealth] = useState(100);
   const [showGame, setShowGame] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
-  const [setIsVictory] = useState(false);
+  const [isVictory, setIsVictory] = useState(false);
   const [jumpCount, setJumpCount] = useState(0);
   const [fishCount, setFishCount] = useState(0);
   const [milkCount, setMilkCount] = useState(0);
@@ -533,6 +533,7 @@ update() {
         <MainPage 
           onStartGame={startGame} 
           orientation={orientation}
+          gameSize={gameSize}  // gameSize prop 추가
         />
       )}
       

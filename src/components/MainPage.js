@@ -1,61 +1,93 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-const MainPage = ({ onStartGame }) => {
+const MainPage = ({ onStartGame, gameSize }) => {  // gameSize prop 추가
   const [showButton, setShowButton] = useState(false);
+  const [showTitle, setShowTitle] = useState(false);
+  const [catArrived, setCatArrived] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowButton(true), 3000); // 3초 후에 버튼 표시
+    const timer = setTimeout(() => setShowButton(true), 4000); // 애니메이션 후에 버튼 표시
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <div style={{
-      height: '100vh',
-      width: '100%',
+      width: `${gameSize.width}px`,
+      height: `${gameSize.height}px`,
       backgroundColor: '#2d3748',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      margin: '0 auto'
     }}>
-      <motion.h1 
+      <motion.div
         style={{
-          fontSize: '3.75rem',
-          fontWeight: 'bold',
-          color: 'white',
-          position: 'absolute',
-          top: '25%',
-          left: '50%',
-          transform: 'translateX(-50%)'
-        }}
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 50, damping: 10, duration: 1.5 }}
-      >
-        Maze Whiskers
-      </motion.h1>
-      
-      <motion.img
-        src="/sources/cat1.png"
-        alt="Cat"
-        style={{
-          width: '8rem',
-          height: '8rem',
-          objectFit: 'contain',
           position: 'absolute',
           top: '50%',
           left: '50%',
-          transform: 'translate(-50%, -50%)'
+          transform: 'translate(-50%, -50%)',
+          textAlign: 'center'
         }}
-        initial={{ x: '100%', opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 50, damping: 10, delay: 1.5, duration: 1.5 }}
-      />
+        initial={{ opacity: 0 }}
+        animate={{ opacity: catArrived ? 1 : 0 }}
+        transition={{ duration: 1 }}
+      >
+        <h1 style={{
+          fontSize: '2.5rem',
+          fontWeight: 'bold',
+          color: 'white',
+          margin: 0,
+          whiteSpace: 'nowrap'
+        }}>
+          Maze Whiskers
+        </h1>
+      </motion.div>
+      
+      <motion.div
+        style={{
+          width: '8rem',
+          height: '8rem',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          scaleX: -1,  // 고양이 반전
+        }}
+        initial={{ x: '100%', opacity: 1 }}
+        animate={{ x: '-50%' }}
+        transition={{ 
+          type: 'spring', 
+          stiffness: 50, 
+          damping: 10, 
+          duration: 2 
+        }}
+        onAnimationComplete={() => {
+          setCatArrived(true);
+        }}
+      >
+        <motion.div
+          animate={{
+            backgroundImage: ['url(/sources/cat1.png)', 'url(/sources/cat2.png)']
+          }}
+          transition={{
+            duration: 0.5,
+            repeat: Infinity,
+            repeatType: 'reverse'
+          }}
+          style={{
+            width: '100%',
+            height: '100%',
+            backgroundSize: 'contain',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center'
+          }}
+        />
+      </motion.div>
 
-      {showButton && (
+      {showButton && catArrived && (
         <motion.button
           style={{
             padding: '0.75rem 1.5rem',
@@ -69,7 +101,8 @@ const MainPage = ({ onStartGame }) => {
             left: '50%',
             transform: 'translateX(-50%)',
             border: 'none',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            fontSize: '1.25rem'
           }}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
