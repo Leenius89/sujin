@@ -14,54 +14,65 @@ const MainPage = ({ onStartGame, gameSize }) => {
        height: '8rem',
        position: 'absolute',
        top: '50%',
-       transform: 'translateY(-50%) scaleX(-1)',
-       display: 'flex',
-       justifyContent: 'center',
-       alignItems: 'center'
+       left: '50%', // 중앙 정렬을 위해 추가
+       transform: 'translate(-50%, -50%)', // 중앙 정렬
      }}
-     initial={{ x: '200%' }}
-     animate={{ x: '50%' }}
+     initial={{ x: gameSize.width / 2 }} // 오른쪽에서 시작
+     animate={{ x: 0 }} // 중앙으로 이동
      transition={{ 
-       duration: 5,
-       ease: "linear" 
+       duration: 3, // 더 빠른 이동
+       ease: "linear"
      }}
      onAnimationComplete={() => {
        setCatArrived(true);
        setShowButton(true);
      }}
    >
-     <motion.img
-       src="/sources/cat1.png"
-       alt="Walking Cat"
+     <motion.div
        style={{
          width: '100%',
          height: '100%',
-         objectFit: 'contain',
-         position: 'absolute'
+         display: 'flex',
+         justifyContent: 'center',
+         alignItems: 'center',
+         position: 'relative',
        }}
-       animate={{ opacity: [1, 0] }}
-       transition={{
-         duration: 0.6,
-         repeat: Infinity,
-         repeatType: "reverse"
-       }}
-     />
-     <motion.img
-       src="/sources/cat2.png"
-       alt="Walking Cat 2"
-       style={{
-         width: '100%',
-         height: '100%',
-         objectFit: 'contain',
-         position: 'absolute'
-       }}
-       animate={{ opacity: [0, 1] }}
-       transition={{
-         duration: 0.6,
-         repeat: Infinity,
-         repeatType: "reverse"
-       }}
-     />
+     >
+       <motion.img
+         src="/sources/cat1.png"
+         alt="Walking Cat"
+         style={{
+           width: '100%',
+           height: '100%',
+           objectFit: 'contain',
+           position: 'absolute',
+           transform: 'scaleX(1)', // 정방향으로 변경
+         }}
+         animate={{ opacity: [1, 0] }}
+         transition={{
+           duration: 0.3, // 애니메이션 속도 증가
+           repeat: catArrived ? 0 : Infinity, // 도착 시 애니메이션 정지
+           repeatType: "reverse"
+         }}
+       />
+       <motion.img
+         src="/sources/cat2.png"
+         alt="Walking Cat 2"
+         style={{
+           width: '100%',
+           height: '100%',
+           objectFit: 'contain',
+           position: 'absolute',
+           transform: 'scaleX(1)', // 정방향으로 변경
+         }}
+         animate={{ opacity: [0, 1] }}
+         transition={{
+           duration: 0.3, // 애니메이션 속도 증가
+           repeat: catArrived ? 0 : Infinity, // 도착 시 애니메이션 정지
+           repeatType: "reverse"
+         }}
+       />
+     </motion.div>
    </motion.div>
  );
 
@@ -83,7 +94,8 @@ const MainPage = ({ onStartGame, gameSize }) => {
        style={{
          position: 'absolute',
          top: '20%',
-         width: '100%',
+         left: '50%', // 중앙 정렬
+         transform: 'translateX(-50%)', // 중앙 정렬
          textAlign: 'center'
        }}
        initial={{ opacity: 0 }}
@@ -94,7 +106,8 @@ const MainPage = ({ onStartGame, gameSize }) => {
          fontSize: '2.5rem',
          fontWeight: 'bold',
          color: 'white',
-         margin: 0
+         margin: 0,
+         whiteSpace: 'nowrap'
        }}>
          Maze Whiskers
        </h1>
@@ -117,9 +130,9 @@ const MainPage = ({ onStartGame, gameSize }) => {
            cursor: 'pointer',
            fontSize: '1.25rem',
            position: 'absolute',
-           left: '50%',
+           left: '50%', // 중앙 정렬
            top: '70%',
-           transform: 'translate(-50%, 0)',
+           transform: 'translateX(-50%)', // 중앙 정렬
            zIndex: 10
          }}
          initial={{ scale: 0, opacity: 0 }}
