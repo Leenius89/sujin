@@ -46,37 +46,38 @@ function App() {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   
       if (isMobile) {
-        // 모바일에서는 화면의 90%만 사용하고, 비율을 16:9로 유지
-        const maxWidth = width * 0.9;
-        const maxHeight = height * 0.9;
-        const aspectRatio = 16 / 9;
+        // 모바일에서는 화면의 95%를 사용
+        const availableWidth = width * 0.95;
+        const availableHeight = height * 0.8; // 헤더와 여백을 고려하여 80%만 사용
   
+        // 게임 화면 비율을 3:4로 고정
+        const targetAspectRatio = 3 / 4;
         let newWidth, newHeight;
-        if (width / height > aspectRatio) {
-          // 화면이 더 넓은 경우
-          newHeight = maxHeight;
-          newWidth = maxHeight * aspectRatio;
+  
+        if (availableWidth / availableHeight > targetAspectRatio) {
+          // 화면이 더 넓은 경우, 높이 기준으로 계산
+          newHeight = availableHeight;
+          newWidth = availableHeight * targetAspectRatio;
         } else {
-          // 화면이 더 좁은 경우
-          newWidth = maxWidth;
-          newHeight = maxWidth / aspectRatio;
+          // 화면이 더 좁은 경우, 너비 기준으로 계산
+          newWidth = availableWidth;
+          newHeight = availableWidth / targetAspectRatio;
         }
   
+        // 최소/최대 크기 제한 설정
+        newWidth = Math.min(Math.max(newWidth, 300), 600);
+        newHeight = Math.min(Math.max(newHeight, 400), 800);
+  
         setGameSize({
-          width: Math.min(newWidth, 800), // 최대 너비 제한
-          height: Math.min(newHeight, 1000) // 최대 높이 제한
+          width: Math.floor(newWidth),
+          height: Math.floor(newHeight)
         });
       } else {
-        // 데스크톱 크기 유지
+        // 데스크톱 크기는 기존대로 유지
         setGameSize({
           width: Math.min(768, width * 0.9),
           height: Math.min(1024, height * 0.9)
         });
-      }
-  
-      if (game.current) {
-        game.current.scale.resize(gameSize.width, gameSize.height);
-        game.current.scale.refresh();
       }
     };
   
@@ -494,7 +495,8 @@ function App() {
       maxWidth: '100vw',
       overflow: 'hidden',
       position: 'relative',
-      backgroundColor: '#1a1a1a'
+      backgroundColor: '#1a1a1a',
+      paddingTop: '10px' // 상단 여백 추가
     }}>
       {showGame ? (
         <>
@@ -510,11 +512,12 @@ function App() {
             style={{ 
               width: `${gameSize.width}px`, 
               height: `${gameSize.height}px`,
-              margin: '0 auto',
+              margin: '10px auto',
               touchAction: 'none',
               WebkitTouchCallout: 'none',
               WebkitUserSelect: 'none',
-              userSelect: 'none'
+              userSelect: 'none',
+              position: 'relative'
             }}
           />
         </>
@@ -532,29 +535,6 @@ function App() {
           fishCount={fishCount} 
           orientation={orientation}
         />
-      )}
-
-      {/* 모바일 가로 모드 경고 메시지 */}
-      {orientation === 'landscape' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.9)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '20px',
-          textAlign: 'center',
-          fontSize: '1.2rem'
-        }}>
-          더 나은 게임 경험을 위해<br/>
-          세로 모드로 전환해주세요
-        </div>
       )}
     </div>
   );
