@@ -21,7 +21,6 @@ import {
   createEnemyAnimations,
   handleEnemyMovement
 } from './game/enemyUtils';
-import { VictoryScene } from './game/victory/victoryUtils';
 import { createGoal } from './game/goalUtils';
 import { setupHealthSystem } from './game/healthUtils';
 import { SoundManager } from './game/soundUtils';

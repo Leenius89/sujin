@@ -43,7 +43,7 @@ export const handleWallJump = (enemy, scene, player) => {
 };
 
 const performJump = (enemy, scene, angle) => {
-  // startX 변수 제거하고 직접 사용
+  // startX 제거
   const jumpHeight = 150;
   const jumpDistance = 200;
   const jumpDuration = 600;
