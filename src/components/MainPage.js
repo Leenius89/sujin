@@ -17,10 +17,10 @@ const MainPage = ({ onStartGame, gameSize }) => {
        left: '50%',
        transform: 'translate(-50%, -50%)',
      }}
-     initial={{ x: '100%' }}  // 시작 위치
-     animate={{ x: 0 }}      // 목표 위치
+     initial={{ x: '100vw' }}
+     animate={{ x: 0 }}
      transition={{ 
-       duration: 2,        // 이동 시간 단축
+       duration: 2,
        ease: "linear"
      }}
      onAnimationComplete={() => {
@@ -28,49 +28,53 @@ const MainPage = ({ onStartGame, gameSize }) => {
        setShowButton(true);
      }}
    >
+     {/* 애니메이션용 이미지 컨테이너 */}
      <motion.div
        style={{
          width: '100%',
          height: '100%',
-         display: 'flex',
-         justifyContent: 'center',
-         alignItems: 'center',
          position: 'relative',
          transform: 'scaleX(-1)',  // 고양이 반전
        }}
      >
+       {/* cat1 이미지 */}
        <motion.img
          src="/sources/cat1.png"
-         alt="Walking Cat"
+         alt="Cat Walking 1"
          style={{
            width: '100%',
            height: '100%',
            objectFit: 'contain',
            position: 'absolute',
+           left: 0,
+           top: 0,
          }}
-         animate={{ 
-           opacity: catArrived ? 1 : [1, 0]  // 도착하면 애니메이션 정지
+         animate={{
+           opacity: catArrived ? 1 : [1, 0]
          }}
          transition={{
-           duration: 0.2,  // 더 빠른 애니메이션
+           duration: 0.25,
            repeat: catArrived ? 0 : Infinity,
            repeatType: "reverse"
          }}
        />
+       {/* cat2 이미지 */}
        <motion.img
          src="/sources/cat2.png"
-         alt="Walking Cat 2"
+         alt="Cat Walking 2"
          style={{
            width: '100%',
            height: '100%',
            objectFit: 'contain',
            position: 'absolute',
+           left: 0,
+           top: 0,
          }}
-         animate={{ 
-           opacity: catArrived ? 0 : [0, 1]  // 도착하면 애니메이션 정지
+         animate={{
+           opacity: catArrived ? 0 : [0, 1]
          }}
          transition={{
-           duration: 0.2,  // 더 빠른 애니메이션
+           duration: 0.25,
            repeat: catArrived ? 0 : Infinity,
            repeatType: "reverse"
          }}
@@ -88,6 +92,7 @@ const MainPage = ({ onStartGame, gameSize }) => {
      flexDirection: 'column',
      alignItems: 'center',
      position: 'relative',
+     overflow: 'hidden',
      margin: '0 auto'
    }}>
      {/* 타이틀 */}
@@ -95,7 +100,8 @@ const MainPage = ({ onStartGame, gameSize }) => {
        style={{
          position: 'absolute',
          top: '20%',
-         width: '100%',
+         left: '50%',
+         transform: 'translateX(-50%)',
          textAlign: 'center'
        }}
        initial={{ opacity: 0 }}
@@ -133,7 +139,8 @@ const MainPage = ({ onStartGame, gameSize }) => {
            left: '50%',
            top: '65%',
            transform: 'translateX(-50%)',
-           zIndex: 10
+           zIndex: 10,
+           whiteSpace: 'nowrap'
          }}
          initial={{ scale: 0, opacity: 0 }}
          animate={{ scale: 1, opacity: 1 }}
