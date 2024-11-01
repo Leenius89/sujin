@@ -1,59 +1,69 @@
 import React from 'react';
 
-const Header = ({ restartGame, health, jumpCount = 0 }) => {
-  // 체력을 백분율로 변환
-  const healthPercentage = (health / 100) * 100;
-
+const Header = ({ restartGame, health, jumpCount, orientation }) => {
+  const headerHeight = orientation === 'portrait' ? '50px' : '40px';
+  const fontSize = orientation === 'portrait' ? '1rem' : '0.8rem';
+  
   return (
     <div style={{
       width: '100%',
-      maxWidth: '768px',
-      height: '64px',
+      height: headerHeight,
       backgroundColor: '#F5E5DC',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 16px',
-      boxSizing: 'border-box'
+      padding: '0 10px',
+      boxSizing: 'border-box',
+      position: 'relative',
+      zIndex: 1000,
     }}>
-      <h1 style={{ cursor: 'pointer', margin: 0 }} onClick={restartGame}>
+      <h1 
+        style={{ 
+          cursor: 'pointer', 
+          margin: 0, 
+          fontSize: fontSize,
+          whiteSpace: 'nowrap'
+        }} 
+        onClick={restartGame}
+      >
         Maze Whiskers
       </h1>
+      
       <div style={{ 
         display: 'flex', 
         alignItems: 'center',
-        gap: '20px'  // HP와 Jump 사이의 간격
+        gap: '10px'
       }}>
-        {/* Jump 카운트 표시 */}
         <div style={{ 
           display: 'flex', 
           alignItems: 'center',
-          backgroundColor: '#4a5568',
-          padding: '4px 12px',
-          borderRadius: '15px',
-          color: 'white'
+          fontSize: fontSize 
         }}>
-          <span>Jump × {jumpCount}</span>
-        </div>
-
-        {/* HP 바 */}
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <span style={{ marginRight: '8px' }}>HP</span>
+          <span style={{ marginRight: '5px' }}>HP</span>
           <div style={{ 
-            width: '100px', 
-            height: '20px', 
+            width: '60px', 
+            height: '15px', 
             backgroundColor: '#ddd', 
             borderRadius: '10px',
             overflow: 'hidden'
           }}>
             <div style={{
-              width: `${healthPercentage}%`,
+              width: `${health}%`,
               height: '100%',
               backgroundColor: 'red',
               borderRadius: '10px',
               transition: 'width 0.5s'
             }}></div>
           </div>
+        </div>
+
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          fontSize: fontSize 
+        }}>
+          <span style={{ marginRight: '5px' }}>Jump</span>
+          <span>{jumpCount}</span>
         </div>
       </div>
     </div>
