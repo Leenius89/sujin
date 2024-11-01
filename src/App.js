@@ -46,37 +46,31 @@ function App() {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   
       if (isMobile) {
-        // 모바일에서는 화면의 95%를 사용
-        const availableWidth = width * 0.95;
-        const availableHeight = height * 0.8; // 헤더와 여백을 고려하여 80%만 사용
+        // 모바일에서는 화면의 90%를 사용
+        const availableWidth = width * 0.9;
+        const availableHeight = height * 0.95; // 높이를 더 많이 사용
   
-        // 게임 화면 비율을 3:4로 고정
-        const targetAspectRatio = 3 / 4;
+        // 가로세로 비율 계산을 화면에 맞게 조정
         let newWidth, newHeight;
   
-        if (availableWidth / availableHeight > targetAspectRatio) {
-          // 화면이 더 넓은 경우, 높이 기준으로 계산
+        if (width > height) { // 가로모드
+          newWidth = Math.min(availableWidth, availableHeight * 1.2);
+          newHeight = newWidth * 0.8;
+        } else { // 세로모드
           newHeight = availableHeight;
-          newWidth = availableHeight * targetAspectRatio;
-        } else {
-          // 화면이 더 좁은 경우, 너비 기준으로 계산
-          newWidth = availableWidth;
-          newHeight = availableWidth / targetAspectRatio;
+          newWidth = Math.min(availableWidth, newHeight * 0.75);
         }
-  
-        // 최소/최대 크기 제한 설정
-        newWidth = Math.min(Math.max(newWidth, 300), 600);
-        newHeight = Math.min(Math.max(newHeight, 400), 800);
   
         setGameSize({
           width: Math.floor(newWidth),
           height: Math.floor(newHeight)
         });
       } else {
-        // 데스크톱 크기는 기존대로 유지
+        // 데스크톱은 작은 크기로 조정
+        const desktopWidth = Math.min(600, width * 0.8);
         setGameSize({
-          width: Math.min(768, width * 0.9),
-          height: Math.min(1024, height * 0.9)
+          width: desktopWidth,
+          height: desktopWidth * 1.33 // 4:3 비율 유지
         });
       }
     };
@@ -232,76 +226,97 @@ function App() {
         });
       }
       setupMobileControls(player) {
-        const joystickRadius = Math.min(gameSize.width * 0.15, 50);
-        const buttonRadius = Math.min(gameSize.width * 0.12, 40);
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (!isMobile) return;
       
-        // 조이스틱 베이스 생성
-        const joystickBase = this.add.circle(
-          joystickRadius * 1.5,
-          gameSize.height - joystickRadius * 1.5,
-          joystickRadius,
-          0x000000,
-          0.3
-        );
-      
-        // 조이스틱 핸들 생성
-        const joystick = this.add.circle(
-          joystickBase.x,
-          joystickBase.y,
-          joystickRadius * 0.5,
-          0xcccccc,
-          0.5
-        );
+        // 조이스틱 설정
+        let joystickBase = null;
+        let joystick = null;
+        const joystickRadius = Math.min(gameSize.width * 0.15, 40);
       
         // 점프 버튼 생성
-        const jumpButton = this.add.circle(
-          gameSize.width - buttonRadius * 1.5,
-          gameSize.height - buttonRadius * 1.5,
-          buttonRadius,
-          0xff0000,
-          0.3
+        const jumpButton = this.add.container(
+          gameSize.width - 70,
+          gameSize.height - 70
         );
       
-        // UI 요소 설정
-        [joystickBase, joystick, jumpButton].forEach(element => {
-          element.setScrollFactor(0);
-          element.setDepth(1000);
-        });
+        // 점프 버튼 배경
+        const jumpButtonBg = this.add.circle(0, 0, 35, 0xff0000, 0.5);
+        const jumpText = this.add.text(0, 0, 'Jump', {
+          fontSize: '20px',
+          color: '#ffffff'
+        }).setOrigin(0.5, 0.5);
+        
+        jumpButton.add([jumpButtonBg, jumpText]);
+        jumpButton.setDepth(1000);
+        jumpButton.setScrollFactor(0);
+        jumpButton.setInteractive(
+          new Phaser.Geom.Circle(0, 0, 35),
+          Phaser.Geom.Circle.Contains
+        );
       
-        // 여기서부터 조이스틱 컨트롤 로직 시작
-        let isMoving = false;
-        const maxDistance = joystickRadius;
-      
+        // 터치 시작 시 조이스틱 생성
         this.input.on('pointerdown', (pointer) => {
-          if (pointer.x < gameSize.width / 2) {
-            isMoving = true;
-          }
-        });
-      
-        this.input.on('pointermove', (pointer) => {
-          if (isMoving && pointer.x < gameSize.width / 2) {
-            // ... 조이스틱 이동 로직 유지 ...
-          }
-        });
-      
-        this.input.on('pointerup', () => {
-          isMoving = false;
-          joystick.x = joystickBase.x;
-          joystick.y = joystickBase.y;
-          player.setVelocity(0);
-          player.anims.play('idle', true);
-        });
-      
-        // 점프 버튼 로직 - 한 번만 설정
-        jumpButton.setInteractive()
-          .on('pointerdown', () => {
-            if (!player.isJumping && player.jumpCount > 0) {
-              handlePlayerJump(player, this);
+          if (pointer.x < gameSize.width / 2) { // 화면 왼쪽 절반에서만 조이스틱 생성
+            if (!joystickBase) {
+              joystickBase = this.add.circle(pointer.x, pointer.y, joystickRadius, 0x000000, 0.3);
+              joystick = this.add.circle(pointer.x, pointer.y, joystickRadius * 0.5, 0xcccccc, 0.5);
+              
+              joystickBase.setScrollFactor(0).setDepth(1000);
+              joystick.setScrollFactor(0).setDepth(1000);
             }
-          });
+          }
+        });
       
-        // 터치 이벤트가 다른 입력을 방해하지 않도록 설정
-        this.input.setPollAlways();
+        // 터치 이동
+        this.input.on('pointermove', (pointer) => {
+          if (joystick && joystickBase) {
+            const dx = pointer.x - joystickBase.x;
+            const dy = pointer.y - joystickBase.y;
+            const angle = Math.atan2(dy, dx);
+            const distance = Math.min(joystickRadius, 
+              Math.sqrt(dx * dx + dy * dy));
+      
+            joystick.x = joystickBase.x + Math.cos(angle) * distance;
+            joystick.y = joystickBase.y + Math.sin(angle) * distance;
+      
+            // 속도 계산
+            const speed = 160 * (distance / joystickRadius);
+            player.setVelocity(
+              Math.cos(angle) * speed,
+              Math.sin(angle) * speed
+            );
+      
+            // 애니메이션 및 방향 설정
+            player.anims.play('walk', true);
+            if (dx < 0) {
+              player.setFlipX(true);
+              player.lastDirection = 'left';
+            } else {
+              player.setFlipX(false);
+              player.lastDirection = 'right';
+            }
+          }
+        });
+      
+        // 터치 종료
+        this.input.on('pointerup', () => {
+          if (joystickBase) {
+            joystickBase.destroy();
+            joystick.destroy();
+            joystickBase = null;
+            joystick = null;
+            player.setVelocity(0);
+            player.anims.play('idle', true);
+          }
+        });
+      
+        // 점프 버튼 이벤트
+        jumpButton.on('pointerdown', () => {
+          if (!player.isJumping && player.jumpCount > 0) {
+            handlePlayerJump(player, this);
+          }
+        });
       }
 
 update() {
@@ -508,7 +523,9 @@ update() {
               WebkitTouchCallout: 'none',
               WebkitUserSelect: 'none',
               userSelect: 'none',
-              position: 'relative'
+              position: 'relative',
+              maxWidth: '100%',  // 추가
+              maxHeight: '100vh' // 추가
             }}
           />
         </>
