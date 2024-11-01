@@ -88,83 +88,107 @@ export const handlePlayerMovement = (player, cursors) => {
 };
 
 // 점프 처리
+// handlePlayerJump 함수도 수정
 export const handlePlayerJump = (player, scene) => {
-  if (player.isJumping || player.jumpCount <= 0) return false;
+  if (!player || player.isJumping || player.jumpCount <= 0) return false;
 
-  const lookAheadDist = 80;
-  let angle;
+  try {
+    const lookAheadDist = 80;
+    let angle = player.lastDirection === 'left' ? Math.PI : 0;
 
-  if (player.lastDirection === 'left') {
-    angle = Math.PI;
-  } else {
-    angle = 0;
-  }
+    const lookX = player.x + Math.cos(angle) * lookAheadDist;
+    const lookY = player.y + Math.sin(angle) * lookAheadDist;
 
-  const lookX = player.x + Math.cos(angle) * lookAheadDist;
-  const lookY = player.y + Math.sin(angle) * lookAheadDist;
+    const bounds = new Phaser.Geom.Rectangle(
+      lookX - 16, 
+      lookY - 16, 
+      32, 
+      32
+    );
 
-  const walls = scene.walls.getChildren();
-  const hasWallAhead = walls.some(wall => {
-    const distance = Phaser.Math.Distance.Between(wall.x, wall.y, lookX, lookY);
-    return distance < 40;
-  });
+    const hasWallAhead = scene.walls.getChildren().some(wall => 
+      Phaser.Geom.Rectangle.Overlaps(bounds, wall.getBounds())
+    );
 
-  if (hasWallAhead) {
-    player.isJumping = true;
-    player.jumpCount--;
-    scene.events.emit('updateJumpCount', player.jumpCount);
+    if (hasWallAhead) {
+      player.isJumping = true;
+      player.jumpCount--;
+      scene.events.emit('updateJumpCount', player.jumpCount);
 
-    if (scene.soundManager) {
-      scene.soundManager.playJumpSound();
+      if (scene.soundManager) {
+        scene.soundManager.playJumpSound();
+      }
+
+      performPlayerJump(player, scene, angle);
+      return true;
     }
-
-    // 점프 실행
-    performPlayerJump(player, scene, angle);
-    return true;
+  } catch (error) {
+    console.error('HandleJump error:', error);
+    if (player) {
+      player.isJumping = false;
+    }
   }
   return false;
 };
 
 // 점프 동작 수행
 const performPlayerJump = (player, scene, angle) => {
-  const jumpHeight = 150;
-  const jumpDistance = 200;
-  const jumpDuration = 600;
+  try {
+    const jumpHeight = 150;
+    const jumpDistance = 200;
+    const jumpDuration = 600;
 
-  // 이동 전 위치 저장
-  const targetX = player.x + Math.cos(angle) * jumpDistance;
-  const targetY = player.y + Math.sin(angle) * jumpDistance;
+    // 시작 위치 저장
+    const startY = player.y;  // 이 부분이 빠져있었습니다
+    const targetX = player.x + Math.cos(angle) * jumpDistance;
+    const targetY = player.y + Math.sin(angle) * jumpDistance;
 
-  // 그림자 효과 생성
-  const shadow = scene.add.ellipse(player.x, player.y + 5, 40, 10, 0x000000, 0.3);
+    // 그림자 효과
+    const shadow = scene.add.ellipse(player.x, player.y + 5, 40, 10, 0x000000, 0.3);
+    shadow.setDepth(player.depth - 1);
 
-  // 점프 궤적
-  scene.tweens.add({
-    targets: player,
-    x: targetX,
-    duration: jumpDuration,
-    ease: 'Linear',
-    onUpdate: (tween) => {
-      const progress = tween.progress;
-      const heightOffset = Math.sin(progress * Math.PI) * jumpHeight;
-      player.y = Phaser.Math.Linear(startY, targetY, progress) - heightOffset;
-      
-      // 그림자 업데이트
-      shadow.setPosition(player.x, player.y + 5);
-      shadow.setAlpha(0.3 * (1 - Math.sin(progress * Math.PI) * 0.5));
-    },
-    onComplete: () => {
-      // 착지 효과음 (있다면)
-      if (scene.soundManager) {
-        scene.sound.play('jumpSound', { volume: 0.2 });
+    // 단일 Tween으로 통합
+    scene.tweens.add({
+      targets: player,
+      x: targetX,
+      // y 속성은 직접 업데이트
+      duration: jumpDuration,
+      ease: 'Linear',
+      onUpdate: (tween) => {
+        const progress = tween.progress;
+        const heightOffset = Math.sin(progress * Math.PI) * jumpHeight;
+        player.y = Phaser.Math.Linear(startY, targetY, progress) - heightOffset;
+        
+        if (shadow) {
+          shadow.setPosition(player.x, player.y + 5);
+          shadow.setAlpha(0.3 * (1 - Math.sin(progress * Math.PI) * 0.5));
+        }
+      },
+      onComplete: () => {
+        if (player) {  // player 객체 확인
+          player.isJumping = false;
+          player.y = targetY;  // 최종 위치 확실히 설정
+        }
+        if (shadow) {
+          shadow.destroy();
+        }
+      },
+      onStop: () => {  // 중단됐을 때 처리
+        if (player) {
+          player.isJumping = false;
+        }
+        if (shadow) {
+          shadow.destroy();
+        }
       }
-      
-      setTimeout(() => {
-        player.isJumping = false;
-        shadow.destroy();
-      }, 100);
+    });
+
+  } catch (error) {
+    console.error('Jump error:', error);
+    if (player) {
+      player.isJumping = false;
     }
-  });
+  }
 };
 
 // milk 아이템 생성
