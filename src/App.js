@@ -229,86 +229,109 @@ function App() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (!isMobile) return;
       
-        // UI 카메라 생성
-        const uiCamera = this.cameras.add(0, 0, gameSize.width, gameSize.height);
-        uiCamera.setScroll(0, 0);
-        uiCamera.setZoom(1); // UI는 항상 1배율 유지
-      
-        // 조이스틱 컨테이너 (화면 왼쪽 하단에 위치)
-        const joystickContainer = this.add.container(100, gameSize.height - 100);
-        joystickContainer.setDepth(1000);
-        joystickContainer.setScrollFactor(0);
-      
-        // 조이스틱 베이스와 스틱 초기화
-        let joystickBase = null;
-        let joystick = null;
-        const joystickRadius = Math.min(gameSize.width * 0.15, 50);
-      
-        // 점프 버튼 (화면 오른쪽 하단에 위치)
-        const jumpButton = this.add.container(
-          gameSize.width - 100,
-          gameSize.height - 100
-        );
-        jumpButton.setDepth(1000);
-        jumpButton.setScrollFactor(0);
-      
-        // 점프 버튼 배경
-        const jumpButtonBg = this.add.circle(0, 0, 40, 0xff0000, 0.5);
-        const jumpText = this.add.text(0, 0, 'Jump', {
-          fontSize: '20px',
-          color: '#ffffff'
-        }).setOrigin(0.5, 0.5);
-      
-        jumpButton.add([jumpButtonBg, jumpText]);
-        jumpButton.setInteractive(
-          new Phaser.Geom.Circle(0, 0, 40),
-          Phaser.Geom.Circle.Contains
-        );
-      
-        // 터치 시작 시 조이스틱 생성
-        this.input.on('pointerdown', (pointer) => {
-          if (pointer.x < gameSize.width / 2 && !joystickBase) {
-            const localX = pointer.x - joystickContainer.x;
-            const localY = pointer.y - joystickContainer.y;
-      
-            joystickBase = this.add.circle(0, 0, joystickRadius, 0x000000, 0.3);
-            joystick = this.add.circle(0, 0, joystickRadius * 0.5, 0xcccccc, 0.5);
-      
-            joystickContainer.add([joystickBase, joystick]);
-            
-            // 조이스틱 위치 업데이트
-            joystick.x = localX;
-            joystick.y = localY;
-            joystickBase.x = localX;
-            joystickBase.y = localY;
-          }
+        // UI 컨테이너 생성
+        const gameContainer = document.getElementById('game-container');
+        const controlsContainer = document.createElement('div');
+        Object.assign(controlsContainer.style, {
+          position: 'absolute',
+          bottom: '20px',
+          left: '0',
+          right: '0',
+          display: 'flex',
+          justifyContent: 'space-between',
+          padding: '0 20px',
+          pointerEvents: 'none',
+          zIndex: '1000'
         });
       
-        // 터치 이동
-        this.input.on('pointermove', (pointer) => {
-          if (joystick && joystickBase) {
-            const localX = pointer.x - joystickContainer.x - joystickBase.x;
-            const localY = pointer.y - joystickContainer.y - joystickBase.y;
-            
-            const angle = Math.atan2(localY, localX);
-            const distance = Math.min(
-              joystickRadius,
-              Math.sqrt(localX * localX + localY * localY)
-            );
+        // 조이스틱 영역
+        const joystickArea = document.createElement('div');
+        Object.assign(joystickArea.style, {
+          width: '120px',
+          height: '120px',
+          borderRadius: '50%',
+          background: 'rgba(0, 0, 0, 0.3)',
+          position: 'relative',
+          pointerEvents: 'auto'
+        });
       
-            joystick.x = joystickBase.x + Math.cos(angle) * distance;
-            joystick.y = joystickBase.y + Math.sin(angle) * distance;
+        // 조이스틱 핸들
+        const joystickHandle = document.createElement('div');
+        Object.assign(joystickHandle.style, {
+          width: '60px',
+          height: '60px',
+          borderRadius: '50%',
+          background: 'rgba(255, 255, 255, 0.5)',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none'
+        });
       
-            // 속도 계산
-            const speed = 160 * (distance / joystickRadius);
-            player.setVelocity(
-              Math.cos(angle) * speed,
-              Math.sin(angle) * speed
-            );
+        // 점프 버튼
+        const jumpButton = document.createElement('button');
+        Object.assign(jumpButton.style, {
+          width: '80px',
+          height: '80px',
+          borderRadius: '50%',
+          background: 'rgba(255, 0, 0, 0.5)',
+          border: 'none',
+          color: 'white',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          pointerEvents: 'auto',
+          cursor: 'pointer'
+        });
+        jumpButton.textContent = 'JUMP';
       
-            // 애니메이션 및 방향 설정
+        // UI 조립
+        joystickArea.appendChild(joystickHandle);
+        controlsContainer.appendChild(joystickArea);
+        controlsContainer.appendChild(jumpButton);
+        gameContainer.appendChild(controlsContainer);
+      
+        // 조이스틱 이벤트 처리
+        let isJoystickActive = false;
+        let joystickOrigin = { x: 0, y: 0 };
+      
+        joystickArea.addEventListener('pointerdown', (e) => {
+          isJoystickActive = true;
+          const rect = joystickArea.getBoundingClientRect();
+          joystickOrigin.x = e.clientX - rect.left;
+          joystickOrigin.y = e.clientY - rect.top;
+          joystickHandle.style.left = `${joystickOrigin.x}px`;
+          joystickHandle.style.top = `${joystickOrigin.y}px`;
+        });
+      
+        document.addEventListener('pointermove', (e) => {
+          if (!isJoystickActive) return;
+      
+          const rect = joystickArea.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          
+          const dx = x - joystickOrigin.x;
+          const dy = y - joystickOrigin.y;
+          const angle = Math.atan2(dy, dx);
+          const distance = Math.min(60, Math.sqrt(dx * dx + dy * dy));
+          
+          const moveX = Math.cos(angle) * distance;
+          const moveY = Math.sin(angle) * distance;
+      
+          joystickHandle.style.transform = `translate(${moveX}px, ${moveY}px)`;
+      
+          // 플레이어 이동
+          const speed = 160 * (distance / 60);
+          player.setVelocity(
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed
+          );
+      
+          // 애니메이션
+          if (Math.abs(moveX) > 0 || Math.abs(moveY) > 0) {
             player.anims.play('walk', true);
-            if (localX < 0) {
+            if (moveX < 0) {
               player.setFlipX(true);
               player.lastDirection = 'left';
             } else {
@@ -318,22 +341,30 @@ function App() {
           }
         });
       
-        // 터치 종료
-        this.input.on('pointerup', () => {
-          if (joystickBase) {
-            joystickContainer.removeAll(true);
-            joystickBase = null;
-            joystick = null;
-            player.setVelocity(0);
-            player.anims.play('idle', true);
-          }
-        });
+        const endJoystick = () => {
+          if (!isJoystickActive) return;
+          isJoystickActive = false;
+          joystickHandle.style.transform = 'translate(-50%, -50%)';
+          player.setVelocity(0);
+          player.anims.play('idle', true);
+        };
+      
+        document.addEventListener('pointerup', endJoystick);
+        document.addEventListener('pointercancel', endJoystick);
       
         // 점프 버튼 이벤트
-        jumpButton.on('pointerdown', () => {
+        jumpButton.addEventListener('pointerdown', () => {
           if (!player.isJumping && player.jumpCount > 0) {
             handlePlayerJump(player, this);
           }
+        });
+      
+        // 씬 종료 시 정리를 위해 저장
+        this.mobileControls = { controlsContainer, joystickArea, jumpButton };
+      
+        // 씬 종료 시 정리 함수
+        this.events.once('shutdown', () => {
+          controlsContainer.remove();
         });
       }
 
@@ -426,6 +457,9 @@ update() {
       shutdown() {
         if (this.apartmentSystem) {
           this.apartmentSystem.destroy();
+        }
+        if (this.mobileControls) {
+          this.mobileControls.controlsContainer.remove();
         }
       }
     }
