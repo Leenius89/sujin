@@ -41,36 +41,24 @@ function App() {
 
   useEffect(() => {
     const handleResize = () => {
+      const baseWidth = 768;
       const width = window.innerWidth;
       const height = window.innerHeight;
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   
       if (isMobile) {
-        // 모바일에서는 화면의 90%를 사용
-        const availableWidth = width * 0.9;
-        const availableHeight = height * 0.95; // 높이를 더 많이 사용
-  
-        // 가로세로 비율 계산을 화면에 맞게 조정
-        let newWidth, newHeight;
-  
-        if (width > height) { // 가로모드
-          newWidth = Math.min(availableWidth, availableHeight * 1.2);
-          newHeight = newWidth * 0.8;
-        } else { // 세로모드
-          newHeight = availableHeight;
-          newWidth = Math.min(availableWidth, newHeight * 0.75);
-        }
-  
+        // 모바일에서는 화면 너비의 90%를 사용
+        const maxWidth = Math.min(width * 0.9, baseWidth);
+        
         setGameSize({
-          width: Math.floor(newWidth),
-          height: Math.floor(newHeight)
+          width: maxWidth,
+          height: height * 0.8 // 화면 높이의 80%만 사용
         });
       } else {
-        // 데스크톱은 작은 크기로 조정
-        const desktopWidth = Math.min(600, width * 0.8);
+        // 데스크톱에서는 768px 고정 너비 사용
         setGameSize({
-          width: desktopWidth,
-          height: desktopWidth * 1.33 // 4:3 비율 유지
+          width: baseWidth,
+          height: Math.min(height * 0.9, baseWidth * 1.33) // 4:3 비율 유지하되 화면 높이의 90% 제한
         });
       }
     };
@@ -501,7 +489,7 @@ update() {
       overflow: 'hidden',
       position: 'relative',
       backgroundColor: '#1a1a1a',
-      paddingTop: '10px' // 상단 여백 추가
+      padding: '10px'
     }}>
       {showGame ? (
         <>
@@ -509,8 +497,7 @@ update() {
             restartGame={restartGame} 
             health={health} 
             jumpCount={jumpCount}
-            orientation={orientation}
-            gameSize={gameSize}  // gameSize prop 추가
+            gameSize={gameSize}
           />
           <div 
             id="game-container" 
@@ -524,16 +511,15 @@ update() {
               WebkitUserSelect: 'none',
               userSelect: 'none',
               position: 'relative',
-              maxWidth: '100%',  // 추가
-              maxHeight: '100vh' // 추가
+              maxWidth: '768px',
+              boxShadow: '0 0 10px rgba(0,0,0,0.3)'
             }}
           />
         </>
       ) : (
         <MainPage 
           onStartGame={startGame} 
-          orientation={orientation}
-          gameSize={gameSize}  // gameSize prop 추가
+          gameSize={gameSize}
         />
       )}
       
@@ -542,7 +528,6 @@ update() {
           onRetry={restartGame} 
           milkCount={milkCount} 
           fishCount={fishCount} 
-          orientation={orientation}
         />
       )}
     </div>

@@ -124,69 +124,91 @@ export class VictoryScene extends Phaser.Scene {
     this.setupButtons();
 }
 
-  setupItemStats() {
-    // 아이템 통계 컨테이너
-    const statsContainer = document.createElement('div');
-    Object.assign(statsContainer.style, {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1rem',
-      marginBottom: '2rem',
-      color: 'white',
-      fontSize: '1.5rem'
-    });
+setupItemStats() {
+  // 아이템 통계 컨테이너
+  const statsContainer = document.createElement('div');
+  Object.assign(statsContainer.style, {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+    marginBottom: '2rem',
+    color: 'white',
+    fontSize: '1rem',
+    fontFamily: "'Press Start 2P', cursive",
+    textAlign: 'center',
+    width: '240px',  // 버튼과 동일한 너비
+    margin: '0 auto 2rem auto'  // 중앙 정렬
+  });
 
-    // Milk 카운트
-    const milkDiv = document.createElement('div');
-    Object.assign(milkDiv.style, {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem'
-    });
-    milkDiv.innerHTML = `
-      <img src="/sources/milk.png" alt="milk" style="width: 32px; height: 32px" />
-      <span>× ${this.milkCount}</span>
-    `;
+  // Milk 카운트
+  const milkDiv = document.createElement('div');
+  Object.assign(milkDiv.style, {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',  // 중앙 정렬 추가
+    gap: '1rem',
+    imageRendering: 'pixelated',
+    width: '100%'  // 전체 너비 사용
+  });
+  milkDiv.innerHTML = `
+    <img src="/sources/milk.png" alt="milk" style="width: 32px; height: 32px" />
+    <span style="text-shadow: 2px 2px 0 #000; min-width: 50px; text-align: left">× ${this.milkCount}</span>
+  `;
 
-    // Fish 카운트
-    const fishDiv = document.createElement('div');
-    Object.assign(fishDiv.style, {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem'
-    });
-    fishDiv.innerHTML = `
-      <img src="/sources/fish1.png" alt="fish" style="width: 32px; height: 32px" />
-      <span>× ${this.fishCount}</span>
-    `;
+  // Fish 카운트
+  const fishDiv = document.createElement('div');
+  Object.assign(fishDiv.style, {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',  // 중앙 정렬 추가
+    gap: '1rem',
+    imageRendering: 'pixelated',
+    width: '100%'  // 전체 너비 사용
+  });
+  fishDiv.innerHTML = `
+    <img src="/sources/fish1.png" alt="fish" style="width: 32px; height: 32px" />
+    <span style="text-shadow: 2px 2px 0 #000; min-width: 50px; text-align: left">× ${this.fishCount}</span>
+  `;
 
-    statsContainer.appendChild(milkDiv);
-    statsContainer.appendChild(fishDiv);
-    this.buttonsContainer.appendChild(statsContainer);
-  }
+  statsContainer.appendChild(milkDiv);
+  statsContainer.appendChild(fishDiv);
+  this.buttonsContainer.appendChild(statsContainer);
+}
 
-  setupButtons() {
-    // 버튼 스타일 기본값
-    const buttonStyle = {
-      padding: '1rem 2rem',
-      fontSize: '1.5rem',
-      fontWeight: 'bold',
-      color: 'white',
-      border: 'none',
-      borderRadius: '0.5rem',
-      cursor: 'pointer',
-      marginBottom: '0.5rem',
-      width: '200px'
-    };
+setupButtons() {
+  // 버튼 스타일 기본값
+  const buttonStyle = {
+    padding: '1rem 2rem',
+    fontSize: '1rem',
+    fontFamily: "'Press Start 2P', cursive",  // 픽셀 폰트 적용
+    color: 'white',
+    border: '4px solid',  // 8비트 스타일 테두리
+    cursor: 'pointer',
+    marginBottom: '1rem',
+    width: '240px',  // 버튼 너비 증가
+    imageRendering: 'pixelated',
+    textAlign: 'center',
+    boxShadow: '4px 4px 0 #000',  // 8비트 스타일 그림자
+    textShadow: '2px 2px 0 #000'  // 텍스트 그림자
+  };
 
-    // 메인 메뉴 버튼
-    const mainMenuButton = this.createButton('MAIN MENU', '#4CAF50', buttonStyle);
-    
-    // 재시작 버튼
-    const retryButton = this.createButton('RETRY', '#ff0000', buttonStyle);
-    
-    // 크레딧 버튼
-    const creditButton = this.createButton('CREDITS', '#2196F3', buttonStyle);
+  // 메인 메뉴 버튼
+  const mainMenuButton = this.createButton('MAIN MENU', '#4CAF50', {
+    ...buttonStyle,
+    borderColor: '#2E7D32'  // 어두운 녹색 테두리
+  });
+  
+  // 재시작 버튼
+  const retryButton = this.createButton('RETRY', '#ff0000', {
+    ...buttonStyle,
+    borderColor: '#8B0000'  // 어두운 빨간색 테두리
+  });
+  
+  // 크레딧 버튼
+  const creditButton = this.createButton('CREDITS', '#2196F3', {
+    ...buttonStyle,
+    borderColor: '#0D47A1'  // 어두운 파란색 테두리
+  });
 
     // 버튼 이벤트 설정
     mainMenuButton.onclick = () => {
@@ -225,35 +247,45 @@ export class VictoryScene extends Phaser.Scene {
       );
   };
 
-    // 버튼들을 컨테이너에 추가
-    [mainMenuButton, retryButton, creditButton].forEach(button => {
-      this.buttonsContainer.appendChild(button);
-      requestAnimationFrame(() => {
-        button.style.transform = 'translateY(0)';
-      });
+  // 버튼들을 컨테이너에 추가
+  [mainMenuButton, retryButton, creditButton].forEach(button => {
+    this.buttonsContainer.appendChild(button);
+    requestAnimationFrame(() => {
+      button.style.transform = 'translateY(0)';
     });
-  }
+  });
+}
 
-  createButton(text, bgColor, baseStyle) {
-    const button = document.createElement('button');
-    Object.assign(button.style, {
-      ...baseStyle,
-      backgroundColor: bgColor,
-      transform: 'translateY(100vh)',
-      transition: 'all 0.3s ease'
-    });
-    button.textContent = text;
-    
-    button.onmouseover = () => {
-      button.style.transform = 'scale(1.1)';
-      button.style.filter = 'brightness(0.9)';
-    };
-    
-    button.onmouseout = () => {
-      button.style.transform = 'scale(1)';
-      button.style.filter = 'brightness(1)';
-    };
+createButton(text, bgColor, baseStyle) {
+  const button = document.createElement('button');
+  Object.assign(button.style, {
+    ...baseStyle,
+    backgroundColor: bgColor,
+    transform: 'translateY(100vh)',
+    transition: 'all 0.1s ease'  // 더 빠른 전환 효과
+  });
+  button.textContent = text;
+  
+  button.onmouseover = () => {
+    button.style.transform = 'translateY(-2px)';
+    button.style.boxShadow = '6px 6px 0 #000';  // 그림자 증가
+  };
+  
+  button.onmouseout = () => {
+    button.style.transform = 'translateY(0)';
+    button.style.boxShadow = '4px 4px 0 #000';  // 원래 그림자로 복귀
+  };
 
-    return button;
+  button.onmousedown = () => {
+    button.style.transform = 'translateY(2px)';
+    button.style.boxShadow = '2px 2px 0 #000';  // 그림자 감소
+  };
+
+  button.onmouseup = () => {
+    button.style.transform = 'translateY(-2px)';
+    button.style.boxShadow = '6px 6px 0 #000';
+  };
+
+  return button;
   }
 }

@@ -9,7 +9,7 @@ export const showEndingMessages = async (scene, width, height) => {
 
   const textStyle = {
     fontFamily: 'Arial',
-    fontSize: '28px',
+    fontSize: '20px',
     color: '#ffffff',
     align: 'center',
     fixedWidth: width * 0.8,

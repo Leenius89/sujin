@@ -34,7 +34,7 @@ export const showCredits = (scene, width, height, onStart, onEnd) => {
     // 화면 중앙에 텍스트 배치
     const creditsText = scene.add.text(width / 2, height / 2, credits.join('\n'), {
         fontFamily: 'Arial',
-        fontSize: '28px',
+        fontSize: '20px',
         color: '#ffffff',
         align: 'center',
         lineSpacing: 10

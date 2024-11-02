@@ -1,111 +1,256 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 const MainPage = ({ onStartGame }) => {
-  const [showButton, setShowButton] = useState(false);
-  const [showTitle, setShowTitle] = useState(false);
-  const [cameraPosition, setCameraPosition] = useState(0);
+ const [showButton, setShowButton] = useState(false);
+ const [showTitle, setShowTitle] = useState(false);
+ const [cameraPosition, setCameraPosition] = useState(0);
+ const [showStartScreen, setShowStartScreen] = useState(true);
+ const audioRef = useRef(null);
 
-  useEffect(() => {
-    // Start camera pan animation after a short delay
-    setTimeout(() => {
-      setCameraPosition(1);
-      // Show title after camera reaches top
-      setTimeout(() => {
-        setShowTitle(true);
-        // Show button after title animation
-        setTimeout(() => {
-          setShowButton(true);
-        }, 2000);
-      }, 2000);
-    }, 500);
-  }, []);
+ const startExperience = async () => {
+   try {
+     audioRef.current = new Audio('/sources/main.mp3');
+     audioRef.current.loop = true;
+     audioRef.current.volume = 0.5;
+     await audioRef.current.play();
+     
+     setShowStartScreen(false);
+     
+     setTimeout(() => {
+       setCameraPosition(1);
+       setTimeout(() => {
+         setShowTitle(true);
+         setTimeout(() => {
+           setShowButton(true);
+         }, 2000);
+       }, 4000);
+     }, 500);
+   } catch (error) {
+     console.error('Failed to play music:', error);
+   }
+ };
 
+ useEffect(() => {
+   return () => {
+     if (audioRef.current) {
+       audioRef.current.pause();
+       audioRef.current.currentTime = 0;
+     }
+   };
+ }, []);
+
+ if (showStartScreen) {
   return (
-    <div className="w-full h-screen relative overflow-hidden bg-gray-900">
-      {/* Background with camera pan effect */}
+    <div
+      style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#000',
+        cursor: 'pointer'
+      }}
+      onClick={startExperience}
+    >
       <motion.div
-        className="w-full h-[200vh] relative"
-        initial={{ y: "0%" }}
-        animate={{ y: cameraPosition ? "-50%" : "0%" }}
-        transition={{ duration: 2, ease: "easeInOut" }}
-      >
-        <img 
-          src="/sources/main.png" 
-          alt="Background" 
-          className="w-full h-full object-cover"
-        />
-      </motion.div>
-
-      {/* Title with pixel animation effect */}
-      <motion.div
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center"
-        initial={{ opacity: 0 }}
-        animate={{ 
-          opacity: showTitle ? 1 : 0,
+        style={{
+          color: 'white',
+          fontFamily: "'Press Start 2P', cursive",
+          textAlign: 'center',
+          padding: '20px',
+          fontSize: '24px'
         }}
-        transition={{ duration: 0.1 }}
+        animate={{ 
+          opacity: [0, 1, 1, 0],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          times: [0, 0.4, 0.6, 1],
+          ease: "easeInOut"
+        }}
       >
-        <motion.h1
-          className="text-6xl font-bold text-white font-pixel"
-          style={{ 
-            textShadow: '2px 2px 0 #000',
-            fontFamily: "'Press Start 2P', cursive"
-          }}
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            visible: { opacity: 1, y: 0 }
-          }}
-          initial="hidden"
-          animate={showTitle ? "visible" : "hidden"}
-          transition={{
-            duration: 0.5,
-            type: "spring",
-            stiffness: 50,
-            mass: 0.1,
-            steps: 4  // Makes the animation appear choppy/pixelated
-          }}
-        >
-          Maze Whiskers
-        </motion.h1>
+        CLICK TO START
       </motion.div>
-
-      {/* Pixel art start button */}
-      {showButton && (
-        <motion.button
-          className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 px-8 py-4 bg-red-600 text-white font-pixel"
-          style={{
-            fontFamily: "'Press Start 2P', cursive",
-            imageRendering: 'pixelated',
-            boxShadow: '4px 4px 0 #000',
-            border: '4px solid #000'
-          }}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{
-            duration: 0.3,
-            type: "spring",
-            stiffness: 200,
-            damping: 15,
-            steps: 5  // Pixelated animation effect
-          }}
-          whileHover={{ 
-            scale: 1.1,
-            transition: { duration: 0.1 }
-          }}
-          onClick={onStartGame}
-        >
-          GAME START
-        </motion.button>
-      )}
-
-      {/* Add font loading for pixel art style */}
-      <link 
-        href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" 
-        rel="stylesheet"
-      />
     </div>
   );
+}
+
+ return (
+   <div style={{ 
+     width: '100%',
+     height: '100vh', 
+     display: 'flex',
+     justifyContent: 'center',
+     backgroundColor: '#2d3748'
+   }}>
+     <div style={{ 
+       width: '768px', 
+       height: '100%', 
+       position: 'relative', 
+       overflow: 'hidden'
+     }}>
+       {/* Background */}
+       <motion.div
+         style={{
+           width: '100%',
+           height: '200%',
+           position: 'absolute',
+           top: 0,
+           left: 0,
+           zIndex: 1
+         }}
+         initial={{ y: "-50%" }}
+         animate={{ y: "0%" }}
+         transition={{ 
+           duration: 4,
+           ease: "linear"
+         }}
+       >
+         <img 
+           src="/sources/main.png" 
+           alt="Background" 
+           style={{
+             width: '100%',
+             height: '100%',
+             objectFit: 'cover'
+           }}
+         />
+       </motion.div>
+
+       {/* Title */}
+       <motion.div
+         style={{
+           position: 'fixed',
+           top: '15%',
+           left: '0',
+           right: '0',
+           marginLeft: 'auto',
+           marginRight: 'auto',
+           zIndex: 2,
+           width: '768px',
+           display: 'flex',
+           justifyContent: 'center',
+           alignItems: 'center'
+         }}
+         animate={{ 
+           x: [0, 10, 0, -10, 0],
+           y: [0, -10, 0, -10, 0]
+         }}
+         transition={{
+           duration: 4,
+           ease: "easeInOut",
+           repeat: Infinity
+         }}
+       >
+        <motion.h1
+          style={{
+            fontSize: '4.5rem',
+            fontFamily: "'Press Start 2P', cursive",
+            textShadow: '4px 4px 0px rgba(0, 0, 0, 0.2)',
+            margin: 0,
+            textAlign: 'center',
+            lineHeight: '1.2',
+            imageRendering: 'pixelated',
+            width: '100%'
+          }}
+          initial={{ opacity: 0 }}
+          animate={{ 
+            opacity: showTitle ? 1 : 0,
+            color: [
+              '#000000',
+              '#202020',
+              '#404040',
+              '#606060',
+              '#808080',
+              '#a0a0a0',
+              '#ffffff',
+              '#a0a0a0',
+              '#808080',
+              '#606060',
+              '#404040',
+              '#202020',
+              '#000000'
+            ]
+          }}
+          transition={{
+            opacity: {
+              duration: 0.5,
+              ease: "easeInOut"
+            },
+            color: {
+              duration: 4,
+              repeat: Infinity,
+              ease: "linear"
+            }
+          }}
+        >
+          MAZE WHISKERS
+        </motion.h1>
+       </motion.div>
+
+       {/* Start Button */}
+       {showButton && (
+         <div style={{
+           position: 'fixed',
+           bottom: '20%',
+           left: '50%',
+           transform: 'translateX(-50%)',
+           width: '768px',
+           display: 'flex',
+           justifyContent: 'center',
+           zIndex: 2
+         }}>
+           <motion.button
+             style={{
+               backgroundColor: '#ff0000',
+               color: 'white',
+               border: '4px solid #8b0000',
+               padding: '15px 40px',
+               fontSize: '2rem',
+               fontFamily: "'Press Start 2P', cursive",
+               cursor: 'pointer',
+               imageRendering: 'pixelated',
+               boxShadow: '6px 6px 0px #8b0000',
+               whiteSpace: 'nowrap'
+             }}
+             initial={{ scale: 0, opacity: 0 }}
+             animate={{ scale: 1, opacity: 1 }}
+             transition={{
+               duration: 0.3,
+               type: "steps",
+               steps: 5
+             }}
+             whileHover={{ 
+               y: -2,
+               boxShadow: '8px 8px 0px #8b0000',
+               transition: { duration: 0.1 }
+             }}
+             whileTap={{
+               y: 4,
+               boxShadow: '2px 2px 0px #8b0000',
+             }}
+             onClick={() => {
+               if (audioRef.current) {
+                 audioRef.current.pause();
+               }
+               onStartGame();
+             }}
+           >
+             GAME START
+           </motion.button>
+         </div>
+       )}
+     </div>
+
+     <link 
+       href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" 
+       rel="stylesheet"
+     />
+   </div>
+ );
 };
 
 export default MainPage;
