@@ -229,53 +229,72 @@ function App() {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (!isMobile) return;
       
-        // 조이스틱 설정
+        // UI 카메라 생성
+        const uiCamera = this.cameras.add(0, 0, gameSize.width, gameSize.height);
+        uiCamera.setScroll(0, 0);
+        uiCamera.setZoom(1); // UI는 항상 1배율 유지
+      
+        // 조이스틱 컨테이너 (화면 왼쪽 하단에 위치)
+        const joystickContainer = this.add.container(100, gameSize.height - 100);
+        joystickContainer.setDepth(1000);
+        joystickContainer.setScrollFactor(0);
+      
+        // 조이스틱 베이스와 스틱 초기화
         let joystickBase = null;
         let joystick = null;
-        const joystickRadius = Math.min(gameSize.width * 0.15, 40);
+        const joystickRadius = Math.min(gameSize.width * 0.15, 50);
       
-        // 점프 버튼 생성
+        // 점프 버튼 (화면 오른쪽 하단에 위치)
         const jumpButton = this.add.container(
-          gameSize.width - 70,
-          gameSize.height - 70
+          gameSize.width - 100,
+          gameSize.height - 100
         );
+        jumpButton.setDepth(1000);
+        jumpButton.setScrollFactor(0);
       
         // 점프 버튼 배경
-        const jumpButtonBg = this.add.circle(0, 0, 35, 0xff0000, 0.5);
+        const jumpButtonBg = this.add.circle(0, 0, 40, 0xff0000, 0.5);
         const jumpText = this.add.text(0, 0, 'Jump', {
           fontSize: '20px',
           color: '#ffffff'
         }).setOrigin(0.5, 0.5);
-        
+      
         jumpButton.add([jumpButtonBg, jumpText]);
-        jumpButton.setDepth(1000);
-        jumpButton.setScrollFactor(0);
         jumpButton.setInteractive(
-          new Phaser.Geom.Circle(0, 0, 35),
+          new Phaser.Geom.Circle(0, 0, 40),
           Phaser.Geom.Circle.Contains
         );
       
         // 터치 시작 시 조이스틱 생성
         this.input.on('pointerdown', (pointer) => {
-          if (pointer.x < gameSize.width / 2) { // 화면 왼쪽 절반에서만 조이스틱 생성
-            if (!joystickBase) {
-              joystickBase = this.add.circle(pointer.x, pointer.y, joystickRadius, 0x000000, 0.3);
-              joystick = this.add.circle(pointer.x, pointer.y, joystickRadius * 0.5, 0xcccccc, 0.5);
-              
-              joystickBase.setScrollFactor(0).setDepth(1000);
-              joystick.setScrollFactor(0).setDepth(1000);
-            }
+          if (pointer.x < gameSize.width / 2 && !joystickBase) {
+            const localX = pointer.x - joystickContainer.x;
+            const localY = pointer.y - joystickContainer.y;
+      
+            joystickBase = this.add.circle(0, 0, joystickRadius, 0x000000, 0.3);
+            joystick = this.add.circle(0, 0, joystickRadius * 0.5, 0xcccccc, 0.5);
+      
+            joystickContainer.add([joystickBase, joystick]);
+            
+            // 조이스틱 위치 업데이트
+            joystick.x = localX;
+            joystick.y = localY;
+            joystickBase.x = localX;
+            joystickBase.y = localY;
           }
         });
       
         // 터치 이동
         this.input.on('pointermove', (pointer) => {
           if (joystick && joystickBase) {
-            const dx = pointer.x - joystickBase.x;
-            const dy = pointer.y - joystickBase.y;
-            const angle = Math.atan2(dy, dx);
-            const distance = Math.min(joystickRadius, 
-              Math.sqrt(dx * dx + dy * dy));
+            const localX = pointer.x - joystickContainer.x - joystickBase.x;
+            const localY = pointer.y - joystickContainer.y - joystickBase.y;
+            
+            const angle = Math.atan2(localY, localX);
+            const distance = Math.min(
+              joystickRadius,
+              Math.sqrt(localX * localX + localY * localY)
+            );
       
             joystick.x = joystickBase.x + Math.cos(angle) * distance;
             joystick.y = joystickBase.y + Math.sin(angle) * distance;
@@ -289,7 +308,7 @@ function App() {
       
             // 애니메이션 및 방향 설정
             player.anims.play('walk', true);
-            if (dx < 0) {
+            if (localX < 0) {
               player.setFlipX(true);
               player.lastDirection = 'left';
             } else {
@@ -302,8 +321,7 @@ function App() {
         // 터치 종료
         this.input.on('pointerup', () => {
           if (joystickBase) {
-            joystickBase.destroy();
-            joystick.destroy();
+            joystickContainer.removeAll(true);
             joystickBase = null;
             joystick = null;
             player.setVelocity(0);
