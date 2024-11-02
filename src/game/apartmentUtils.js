@@ -6,7 +6,7 @@ export class ApartmentSystem {
     this.player = player;
     this.goal = goal;
     this.apartments = scene.physics.add.staticGroup();
-    this.mazeSize = 21;
+    this.mazeSize = 41;
     this.tileSize = 64;
     this.spacing = 1.5;
     this.wallScale = 0.22;

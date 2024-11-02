@@ -27,7 +27,7 @@ export const createEnemyAnimations = (scene) => {
 const setupEnemyPhysics = (enemy, scale) => {
   enemy.setScale(scale);
   enemy.setOrigin(0.5, 0.5);
-  enemy.setDepth(1000);
+  enemy.setDepth(10000);
 
   const imageWidth = enemy.width * scale;
   const imageHeight = enemy.height * scale;
@@ -38,7 +38,7 @@ const setupEnemyPhysics = (enemy, scale) => {
 const executeCutscene = (scene, enemy, player) => {
   scene.cameras.main.pan(enemy.x, enemy.y, 1000, 'Power2', true, (camera, progress) => {
     if (progress === 1) {
-      scene.time.delayedCall(2000, () => {
+      scene.time.delayedCall(3500, () => {
         scene.cameras.main.pan(player.x, player.y, 1000, 'Power2', true, (camera, progress) => {
           if (progress === 1) {
             enemy.active = true;

@@ -198,7 +198,7 @@ function App() {
         
         setupHealthSystem(this, player, fishes);
         
-        const spawnDelay = Phaser.Math.Between(30000, 45000);
+        const spawnDelay = Phaser.Math.Between(16000, 20000);
         this.time.delayedCall(spawnDelay, () => {
           if (!this.gameOverStarted) {
             this.enemy = createEnemy(this, this.player, worldWidth, worldHeight);

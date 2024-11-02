@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 export const createMaze = (scene, player) => {
   const tileSize = 64;
   const wallScale = 0.1;
-  const mazeSize = 21;
+  const mazeSize = 41;
   const spacing = 1.5;
 
   // 미로 배열 초기화 - 모든 칸을 벽(1)으로 채움
