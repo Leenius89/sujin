@@ -188,8 +188,20 @@ function App() {
         this.worldWidth = worldWidth;
         this.worldHeight = worldHeight;
         
-        this.cameras.main.startFollow(player);
+        // 카메라 설정 부분 수정
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        
+        this.cameras.main.startFollow(player, true);
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+        
+        if (isMobile) {
+            this.cameras.main.setZoom(0.5); // 모바일에서 더 멀리 보이도록
+            this.cameras.main.setFollowOffset(-50, -50);
+            this.cameras.main.setLerp(0.1, 0.1); // 부드러운 카메라 움직임
+        } else {
+            this.cameras.main.setZoom(1); // PC에서는 기본 줌
+        }
+        
         this.player = player;
         this.cursors = cursors;
         this.walls = walls;
