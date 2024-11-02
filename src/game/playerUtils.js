@@ -170,7 +170,7 @@ export const handlePlayerJump = (player, scene) => {
 // milk 아이템 생성
 export const createMilkItems = (scene, walls, player) => {
   const milks = scene.physics.add.group();
-  const mazeSize = 21;
+  const mazeSize = 41;
   const tileSize = 64;
   const spacing = 1.5;
 

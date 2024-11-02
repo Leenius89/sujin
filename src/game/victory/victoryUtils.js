@@ -210,20 +210,46 @@ setupButtons() {
     borderColor: '#0D47A1'  // 어두운 파란색 테두리
   });
 
-    // 버튼 이벤트 설정
-    mainMenuButton.onclick = () => {
-      this.buttonsContainer.remove();
-      document.dispatchEvent(new CustomEvent('gameVictory', { 
-        detail: { action: 'mainMenu' } 
-      }));
-    };
+ // 버튼 이벤트 수정
+ mainMenuButton.onclick = () => {
+  // 씬 정리
+  if (this.buttonsContainer) {
+    this.buttonsContainer.remove();
+  }
+  // 모든 타이머와 이벤트 정리
+  this.time.removeAllEvents();
+  // 모든 트윈 정리
+  this.tweens.killAll();
+  // 씬 종료
+  this.scene.stop();
+  // 씬 제거
+  this.scene.remove();
+  
+  // 이벤트 발생
+  document.dispatchEvent(new CustomEvent('gameVictory', { 
+    detail: { action: 'mainMenu' } 
+  }));
+};
 
-    retryButton.onclick = () => {
-      this.buttonsContainer.remove();
-      document.dispatchEvent(new CustomEvent('gameVictory', { 
-        detail: { action: 'retry' } 
-      }));
-    };
+
+retryButton.onclick = () => {
+  // 씬 정리
+  if (this.buttonsContainer) {
+    this.buttonsContainer.remove();
+  }
+  // 모든 타이머와 이벤트 정리
+  this.time.removeAllEvents();
+  // 모든 트윈 정리
+  this.tweens.killAll();
+  // 씬 종료
+  this.scene.stop();
+  // 씬 제거
+  this.scene.remove();
+  
+  document.dispatchEvent(new CustomEvent('gameVictory', { 
+    detail: { action: 'retry' } 
+  }));
+};
 
     creditButton.onclick = () => {
       const width = this.cameras.main.width;
@@ -247,45 +273,62 @@ setupButtons() {
       );
   };
 
-  // 버튼들을 컨테이너에 추가
-  [mainMenuButton, retryButton, creditButton].forEach(button => {
-    this.buttonsContainer.appendChild(button);
-    requestAnimationFrame(() => {
-      button.style.transform = 'translateY(0)';
-    });
-  });
-}
-
-createButton(text, bgColor, baseStyle) {
-  const button = document.createElement('button');
-  Object.assign(button.style, {
-    ...baseStyle,
-    backgroundColor: bgColor,
-    transform: 'translateY(100vh)',
-    transition: 'all 0.1s ease'  // 더 빠른 전환 효과
-  });
-  button.textContent = text;
+      // 버튼들을 컨테이너에 추가
+      [mainMenuButton, retryButton, creditButton].forEach(button => {
+        this.buttonsContainer.appendChild(button);
+        requestAnimationFrame(() => {
+          button.style.transform = 'translateY(0)';
+        });
+      });
+    }
   
-  button.onmouseover = () => {
-    button.style.transform = 'translateY(-2px)';
-    button.style.boxShadow = '6px 6px 0 #000';  // 그림자 증가
-  };
-  
-  button.onmouseout = () => {
-    button.style.transform = 'translateY(0)';
-    button.style.boxShadow = '4px 4px 0 #000';  // 원래 그림자로 복귀
-  };
+    // scene 종료 시 정리를 위한 shutdown 메서드 추가
+    shutdown() {
+      if (this.buttonsContainer) {
+        this.buttonsContainer.remove();
+      }
+      this.time.removeAllEvents();
+      this.tweens.killAll();
+      this.anims.remove('victoryCatSwim');
+      
+      // 텍스처 정리
+      ['goalBackground', 'victoryCat1', 'victoryCat2', 'milk', 'fish1'].forEach(key => {
+        if (this.textures.exists(key)) {
+          this.textures.remove(key);
+        }
+      });
+    }
 
-  button.onmousedown = () => {
-    button.style.transform = 'translateY(2px)';
-    button.style.boxShadow = '2px 2px 0 #000';  // 그림자 감소
-  };
+    createButton(text, bgColor, baseStyle) {
+      const button = document.createElement('button');
+      Object.assign(button.style, {
+        ...baseStyle,
+        backgroundColor: bgColor,
+        transform: 'translateY(100vh)',
+        transition: 'all 0.1s ease'  // 더 빠른 전환 효과
+      });
+      button.textContent = text;
+      
+      button.onmouseover = () => {
+        button.style.transform = 'translateY(-2px)';
+        button.style.boxShadow = '6px 6px 0 #000';  // 그림자 증가
+      };
+      
+      button.onmouseout = () => {
+        button.style.transform = 'translateY(0)';
+        button.style.boxShadow = '4px 4px 0 #000';  // 원래 그림자로 복귀
+      };
 
-  button.onmouseup = () => {
-    button.style.transform = 'translateY(-2px)';
-    button.style.boxShadow = '6px 6px 0 #000';
-  };
+      button.onmousedown = () => {
+        button.style.transform = 'translateY(2px)';
+        button.style.boxShadow = '2px 2px 0 #000';  // 그림자 감소
+      };
 
-  return button;
+      button.onmouseup = () => {
+        button.style.transform = 'translateY(-2px)';
+        button.style.boxShadow = '6px 6px 0 #000';
+      };
+
+      return button;
   }
 }
